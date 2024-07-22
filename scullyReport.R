@@ -20,7 +20,7 @@ glimpse(df)
 
 ###############################################
 
-#-------- Find the pitchers -------------------
+#------------- Find the pitchers --------------
 
 findPitchers <- function(df) {
   pitchers <- unique(df %>%
@@ -51,6 +51,10 @@ pitcherDF <- function(df, pitcher) {
 
 ###############################################
 
+#------------------ NAME ----------------------
+
+###############################################
+
 #------------ Name reformatting ---------------
 
 reformatName <- function(pitcher) {
@@ -69,6 +73,10 @@ sanitizeName <- function(name) {
   sanitized_name <- gsub("[^A-Za-z0-9]", "_", name)
   return(sanitized_name)
 }
+
+###############################################
+
+#------------------ DATE ----------------------
 
 ###############################################
 
@@ -108,7 +116,7 @@ oneStrike <- function(pitcher_df) {
     mutate(Count = ifelse(Balls == "0" & Strikes == "1", 1, 0),
            rowID = row_number())
   
-  # Identify the rows with Count01 and the next row
+  # Identify the rows where 0-1 becomes 0-2
   filtered_df <- pitcher_df %>%
     filter(Count == 1) %>%
     select(rowID) %>%
@@ -120,7 +128,7 @@ oneStrike <- function(pitcher_df) {
     filter(!(Balls == 0 & Strikes == 0) & Count != 1) %>%
     mutate(nextCount = ifelse(Balls == "0" & Strikes == "2", 1, 0))
   
-  if (nrow(filtered_df) == 0) {
+  if (nrow(filtered_df) == 0) { # Check to make sure there are instances
     final_df <- pitcher_df %>%
       group_by(Pitcher, PitcherId) %>%
       summarize(
@@ -151,7 +159,7 @@ oneBallOneStrike <- function(pitcher_df) {
     mutate(Count = ifelse(Balls == "1" & Strikes == "1", 1, 0),
            rowID = row_number())
   
-  # Identify the rows with Count11 and the next row
+  # Identify the rows where 1-2 becomes 1-2
   filtered_df <- pitcher_df %>%
     filter(Count == 1) %>%
     select(rowID) %>%
@@ -163,7 +171,7 @@ oneBallOneStrike <- function(pitcher_df) {
     filter(!(Balls == 0 & Strikes == 0) & Count != 1) %>%
     mutate(nextCount = ifelse(Balls == "1" & Strikes == "2", 1, 0))
   
-  if (nrow(filtered_df) == 0) {
+  if (nrow(filtered_df) == 0) { # Check to make sure there are instances
     final_df <- pitcher_df %>%
       group_by(Pitcher, PitcherId) %>%
       summarize(
@@ -195,7 +203,7 @@ firstPitchStrike <- function(pitcher_df) {
     mutate(FirstPitchK = ifelse(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", 
                                                  "FoulBallNotFieldable", "InPlay"), 1, 0))
   
-  if (nrow(filtered_df) == 0) {
+  if (nrow(filtered_df) == 0) { # Check to make sure there are instances
     final_df <- pitcher_df %>%
       group_by(Pitcher, PitcherId) %>%
       summarize(
@@ -222,6 +230,7 @@ firstPitchStrike <- function(pitcher_df) {
 # ------- First 2 of 3 Pitches Strikes --------
 
 firstTwoOfThreeStrikes <- function(pitcher_df) {
+  # Checks to see if the first two of three pitches in an AB are strikes
   final_df <- pitcher_df %>%
     group_by(paofinningupdate) %>%
     filter(n() >= 3) %>%
@@ -284,6 +293,7 @@ workingAhead <- function(pitcher_df) {
 commandDF <- function(pitcher_df) {
   strike_vector <- c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay", "FoulBallNotFieldable")
   
+  # Calculates strike percentage
   command_df <- pitcher_df %>%
     group_by(PitcherId, Pitcher, TaggedPitchType) %>%
     mutate(strike = if_else(PitchCall %in% strike_vector, 1, 0)) %>%
@@ -310,13 +320,14 @@ commandDF <- function(pitcher_df) {
 # ----------- Three Ball Counts ---------------
 
 threeBallCounts <- function(pitcher_df) { 
+  # Counts three ball counts
   ball3Counts <- pitcher_df %>%
     group_by(paofinningupdate) %>%
     mutate(
       `% of PA's that go to 3 Balls Count` = as.integer(any(Balls == 3))
     )
   
-  if (nrow(ball3Counts) == 0) {
+  if (nrow(ball3Counts) == 0) { # Check to make sure there are instances
     final_df <- pitcher_df %>%
       group_by(PitcherId, Pitcher) %>%
       summarize(
@@ -348,6 +359,7 @@ threeBallCounts <- function(pitcher_df) {
 # ------- First Batter of Inning Out % --------
 
 firstBatterOut <- function(pitcher_df) {
+  # Checks if the first batter of an inning was called out
   firstBatterLastRow <- pitcher_df %>%
     filter(substr(paofinningupdate, nchar(paofinningupdate), nchar(paofinningupdate)) == "1") %>%
     group_by(paofinningupdate) %>%
@@ -355,7 +367,7 @@ firstBatterOut <- function(pitcher_df) {
     mutate(Out = as.integer(PlayResult == "Out" | PitchCall %in% c("StrikeSwinging", "StrikeCalled"))) %>%
     ungroup()
   
-  if (nrow(firstBatterLastRow) == 0) {
+  if (nrow(firstBatterLastRow) == 0) { # Check to make sure there are instances
     final_df <- pitcher_df %>%
       group_by(PitcherId, Pitcher) %>%
       summarize(
@@ -465,7 +477,7 @@ scoringRunners <- function(pitcher_df) {
     mutate(Runners = if_else(PlayResult %in% c("Double", "Triple", "HomeRun", "Single", "Error") |
                                KorBB == "Walk" | PitchCall == "HitByPitch", 1, 0))
   
-  if (sum(scoring_df$Runners, na.rm = TRUE) == 0) {
+  if (sum(scoring_df$Runners, na.rm = TRUE) == 0) { # Check to make sure there are instances
     final_df <- pitcher_df %>%
       group_by(PitcherId, Pitcher) %>%
       summarize(
@@ -501,7 +513,7 @@ badCountOuts <- function(pitcher_df) {
     mutate(Out = if_else(PlayResult == "Out" | KorBB == "Strikeout", 1, 0)) %>%
     ungroup()
   
-  if (nrow(badCounts) == 0) {
+  if (nrow(badCounts) == 0) { # Check to make sure there are instances
     final_df <- pitcher_df %>%
       group_by(PitcherId, Pitcher) %>%
       summarize(
@@ -662,17 +674,20 @@ createReports <- function(df) {
   for (pitcher in pitchers) {
     pitcher_df <- pitcherDF(df, pitcher)
     
+    # Creates the various tables
     working_ahead_table <- workingAheadTable(workingAhead(pitcher_df), pitcher)
     command_table <- commandTable(commandDF(pitcher_df), pitcher)
     effiency_table <- effiencyTable(effiencyDF(pitcher_df), pitcher)
     makeup_table <- makeupTable(makeupDF(pitcher_df), pitcher)
     
+    # Sets the plot layout
     plot_layout1 <- "
       A
       B
       C
       D"
     
+    # Creates the Scully graphic
     scullyGraphic <- wrap_plots(working_ahead_table, command_table, effiency_table, makeup_table,
                                  design = plot_layout1)
     
@@ -682,6 +697,7 @@ createReports <- function(df) {
     sanitized_date <- sanitizeDate(date)
     file_name <- paste0(sanitized_name, "_Scully_Report_", sanitized_date, ".png")
     
+    # Saves the image
     ggsave(filename = file_name[1], plot = scullyGraphic, width = 12, height = 8)
   }
 }

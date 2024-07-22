@@ -19,7 +19,7 @@ glimpse(df)
 
 ###############################################
 
-#-------- Find the pitchers -------------------
+#-------------- Find the pitchers -------------
 
 findPitchers <- function(df) {
   pitchers <- unique(df %>%
@@ -30,7 +30,7 @@ findPitchers <- function(df) {
 
 ###############################################
 
-#-------- Find the date -----------------------
+#---------------- Find the date ---------------
 
 findDate <- function(df) {
   date <- unique(df$Date)
