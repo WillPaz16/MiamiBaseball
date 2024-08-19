@@ -13,6 +13,10 @@ library(grid)
 library(kableExtra)
 
 ###############################################
+
+#------------- PREPROCESSING ------------------
+
+###############################################
 # Read in the data
 df <- read_csv("20240317-McKieFieldStad-1_unverified.csv") # Change file as needed
 glimpse(df)
@@ -24,7 +28,7 @@ glimpse(df)
 findPitchers <- function(df) {
   pitchers <- unique(df %>%
                        filter(PitcherTeam == "MIA_RED") %>% # Change if needed
-                       pull(Pitcher)) 
+                       pull(Pitcher))  
   return(pitchers)
 }
 
@@ -43,7 +47,21 @@ findDate <- function(df) {
 
 pitcherDF <- function(df, pitcher) {
   pitcherDF <- df %>% 
-    filter(Pitcher == pitcher)
+    filter(Pitcher == pitcher) %>% 
+    subset(TaggedPitchType != "Other") %>% 
+    subset(TaggedPitchType != "Knuckleball") %>% 
+    mutate(
+      PlayResult = case_when(
+        KorBB == "Walk" & PitchCall == "BallIntentional" ~ "IntentionalWalk",
+        KorBB == "Walk" ~ "Walk",
+        KorBB == "Strikeout" ~ "Strikeout",
+        PitchCall == "HitByPitch" ~ "HitByPitch",
+        TRUE ~ PlayResult
+      ),
+      ExitSpeed = ifelse(PitchCall == "HitByPitch", NA, ExitSpeed),
+      Angle = ifelse(PitchCall == "HitByPitch", NA, Angle)
+    )
+  
   return(pitcherDF)
 }
 
@@ -103,6 +121,10 @@ sanitizeDate <- function(date) {
 
 ###############################################
 
+#--------------- TABLE ------------------------
+
+###############################################
+
 #--------- Create the table summary -----------
 
 tableSummary <- function(df, pitcher, date) {
@@ -147,6 +169,10 @@ tableSummary <- function(df, pitcher, date) {
   
   return(table_with_title)
 }
+
+###############################################
+
+#--------------- CHARTS -----------------------
 
 ###############################################
 
