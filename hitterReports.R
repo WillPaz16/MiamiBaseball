@@ -151,14 +151,12 @@ tableSummary <- function(df, batter, date) {
               Pitcher = Pitcher, 
               Throws = PitcherThrows,
               `No.` = PitchofPA,
-              Count,
+              Count = Count,
               Result = PlayResult,
-              `Hit Type` = AutoHitType,
-              `Exit Velo` = round(ExitSpeed, 1),
-              LA = round(Angle, 1),
-              Distance = round(Distance, 1))
-  
-  AB[is.na(AB)] <- "--"
+              `Hit Type` = ifelse(!is.na(AutoHitType), AutoHitType, "--"),
+              `Exit Velo` = ifelse(!is.na(ExitSpeed), round(ExitSpeed, 1), "--"),
+              LA = ifelse(!is.na(Angle), round(Angle, 1), "--"),
+              Distance = ifelse(!is.na(Distance), round(Distance, 1), "--"))
   
   # Create the tableGrob object
   table <- tableGrob(AB, rows = NULL)
@@ -172,6 +170,8 @@ tableSummary <- function(df, batter, date) {
   
   return(table_with_title)
 }
+
+tableSummary(batterDF(df, "MacDonald, Zach"), "MacDonald, Zach", NA)
 
 ###############################################
 
