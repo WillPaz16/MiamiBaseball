@@ -1,1 +1,1 @@
-# miamiBaseball
+# Miami Baseball
