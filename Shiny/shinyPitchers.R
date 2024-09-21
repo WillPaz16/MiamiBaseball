@@ -1,3 +1,21 @@
+# Since sportyR package is not on CRAN, it needs to be explicitly installed for shiny to work
+# To redeploy app: rsconnect::deployApp(appDir = "~/ShinyApps/shinyPitchers", appName = "ShinyPitchers")
+
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+if (!requireNamespace("sportyR", quietly = TRUE)) {
+  remotes::install_github("sportsdataverse/sportyR")
+}
+
+library(shiny)
+library(readr)
+library(lubridate)
+library(tidyverse)
+library(DT)
+library(sportyR)
+library(rsconnect)
+
 library(shiny)
 library(readr)
 library(lubridate)
@@ -100,16 +118,16 @@ ui <- fluidPage(
                  dataTableOutput("pitcher_percent_table")),
         tabPanel("Metric Plots", br(),  
                  fluidRow(
-          column(4, plotOutput("pitch_movement_plot"), align = "center"),
-          column(4, plotOutput("pitch_location_plot"), align = "center"),
-          column(4, plotOutput("pitch_tilt_plot"), align = "center")
-        )),
+                   column(4, plotOutput("pitch_movement_plot"), align = "center"),
+                   column(4, plotOutput("pitch_location_plot"), align = "center"),
+                   column(4, plotOutput("pitch_tilt_plot"), align = "center")
+                 )),
         tabPanel("Batted Ball Results", br(), dataTableOutput("batted_ball_table"),
                  fluidRow(
                    column(4, plotOutput("hit_location_plot"), align = "center"),
                    column(4, plotOutput("spray_chart"), align = "center")
                  )),
-         #        plotOutput("hit_location_plot"), plotOutput("spray_chart")),
+        #        plotOutput("hit_location_plot"), plotOutput("spray_chart")),
         tabPanel("Heat Maps", br(), plotOutput("heat_map")),
         tabPanel("Trends Over Time", br(), plotOutput("pitch_usage_plot"), br(),
                  plotOutput("pitch_velocity_plot"))
@@ -136,13 +154,13 @@ server <- function(input, output, session) {
   output$selected_count <- renderText({paste(input$CountInput)})
   
   output$selected_whiff <- renderText({paste(input$WhiffInput)})
-
-output$summary_table <- renderDataTable({
-  table <- game
   
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-  }
+  output$summary_table <- renderDataTable({
+    table <- game
+    
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
     
     table <- table %>%
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), PlayResult != "Undefined") %>%
@@ -161,12 +179,12 @@ output$summary_table <- renderDataTable({
     
     tableFilter <- reactive({table})
     datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(targets = 0, visible = FALSE))))
-})
-
-    
-output$pitcher_summary_table <- renderDataTable({
-  table <- game
-  table2 <- game
+  })
+  
+  
+  output$pitcher_summary_table <- renderDataTable({
+    table <- game
+    table2 <- game
     if(any(input$PitchInput == "All")){
       pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
@@ -222,236 +240,236 @@ output$pitcher_summary_table <- renderDataTable({
       table <- table %>% filter(Pitcher %in% input$PitcherInput)
       table2 <- table2 %>% filter(Pitcher %in% input$PitcherInput)
     }
-      table$Tilt <- paste0(table$Tilt, ":00")
-      table <- table %>%
-        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>%
-        group_by('Pitch' = TaggedPitchType) %>%
-        dplyr::summarize('No.' = n(),
-                         'Max Velo (MPH)' = round(max(RelSpeed, na.rm = TRUE),1),
-                           'Avg. Velo (MPH)' = round(mean(RelSpeed, na.rm = TRUE),1),
-                           'Avg. Spin (RPM)' = round(mean(SpinRate, na.rm = TRUE),-1),
-                           'Tilt' =  as.character(format(lubridate::round_date(strptime(convert_to_time(mean((mapply(convert_to_seconds, PitcherThrows, Tilt)), na.rm = TRUE)), "%H:%M"), "15 minutes"), "%H:%M")),
-                           'RelHeight' = round(mean(RelHeight, na.rm = TRUE), 2),
-                           'RelSide' = round(mean(RelSide, na.rm = TRUE), 2),
-                           'Extension' = round(mean(Extension, na.rm = TRUE), 2),
-                           'IVB' = round(mean(InducedVertBreak, na.rm = TRUE), 1),
-                           'HB' = round(mean(HorzBreak, na.rm = TRUE), 1),
-                           'VAA' = round(mean(VertApprAngle, na.rm = TRUE), 2),
-                           'HAA' = round(mean(HorzApprAngle, na.rm = TRUE), 2))# %>%
-          # ungroup() %>%
-          # mutate('Usage %' = round(prop.table(No.), 3)*100)
-      
-      table2 <- table2 %>%
-        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>%
-        dplyr::summarize('Pitch' = "Total",
-                         'No.' = n(),
-                         'Max Velo (MPH)' = round(max(RelSpeed, na.rm = TRUE),1),
-                         'Avg. Velo (MPH)' = round(mean(RelSpeed, na.rm = TRUE),1),
-                         'Avg. Spin (RPM)' = round(mean(SpinRate, na.rm = TRUE),-1),
-                #         'Tilt' = mean(convert_to_seconds(PitcherThrows, Tilt)),
-                         'RelHeight' = round(mean(RelHeight, na.rm = TRUE), 2),
-                         'RelSide' = round(mean(RelSide, na.rm = TRUE), 2),
-                         'Extension' = round(mean(Extension, na.rm = TRUE), 2),
-                         'IVB' = round(mean(InducedVertBreak, na.rm = TRUE), 1),
-                         'HB' = round(mean(HorzBreak, na.rm = TRUE), 1),
-                         'VAA' = round(mean(VertApprAngle, na.rm = TRUE), 2),
-                         'HAA' = round(mean(HorzApprAngle, na.rm = TRUE), 2))
-      table <- bind_rows(table, table2)
-        
-        aux <- nrow(table) - 1
-        table$hiddenColumn <- 0
-        table$hiddenColumn[aux] <- 1
-        tableFilter <- reactive({table})
-        datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0,ncol(table))))))  %>%
-          formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(2,13,15,19,20), `border-right` = "solid 1px") %>%
-          formatStyle(1:ncol(table), valueColumns = "hiddenColumn", `border-bottom` = styleEqual(1, "solid 3px")) %>%
-          formatStyle('Extension',
-                      backgroundColor = styleInterval(c(5.5, 6.5), c('lightcoral', 'white', 'lightgreen')))
-
+    table$Tilt <- paste0(table$Tilt, ":00")
+    table <- table %>%
+      filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>%
+      group_by('Pitch' = TaggedPitchType) %>%
+      dplyr::summarize('No.' = n(),
+                       'Max Velo (MPH)' = round(max(RelSpeed, na.rm = TRUE),1),
+                       'Avg. Velo (MPH)' = round(mean(RelSpeed, na.rm = TRUE),1),
+                       'Avg. Spin (RPM)' = round(mean(SpinRate, na.rm = TRUE),-1),
+                       'Tilt' =  as.character(format(lubridate::round_date(strptime(convert_to_time(mean((mapply(convert_to_seconds, PitcherThrows, Tilt)), na.rm = TRUE)), "%H:%M"), "15 minutes"), "%H:%M")),
+                       'RelHeight' = round(mean(RelHeight, na.rm = TRUE), 2),
+                       'RelSide' = round(mean(RelSide, na.rm = TRUE), 2),
+                       'Extension' = round(mean(Extension, na.rm = TRUE), 2),
+                       'IVB' = round(mean(InducedVertBreak, na.rm = TRUE), 1),
+                       'HB' = round(mean(HorzBreak, na.rm = TRUE), 1),
+                       'VAA' = round(mean(VertApprAngle, na.rm = TRUE), 2),
+                       'HAA' = round(mean(HorzApprAngle, na.rm = TRUE), 2))# %>%
+    # ungroup() %>%
+    # mutate('Usage %' = round(prop.table(No.), 3)*100)
+    
+    table2 <- table2 %>%
+      filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>%
+      dplyr::summarize('Pitch' = "Total",
+                       'No.' = n(),
+                       'Max Velo (MPH)' = round(max(RelSpeed, na.rm = TRUE),1),
+                       'Avg. Velo (MPH)' = round(mean(RelSpeed, na.rm = TRUE),1),
+                       'Avg. Spin (RPM)' = round(mean(SpinRate, na.rm = TRUE),-1),
+                       #         'Tilt' = mean(convert_to_seconds(PitcherThrows, Tilt)),
+                       'RelHeight' = round(mean(RelHeight, na.rm = TRUE), 2),
+                       'RelSide' = round(mean(RelSide, na.rm = TRUE), 2),
+                       'Extension' = round(mean(Extension, na.rm = TRUE), 2),
+                       'IVB' = round(mean(InducedVertBreak, na.rm = TRUE), 1),
+                       'HB' = round(mean(HorzBreak, na.rm = TRUE), 1),
+                       'VAA' = round(mean(VertApprAngle, na.rm = TRUE), 2),
+                       'HAA' = round(mean(HorzApprAngle, na.rm = TRUE), 2))
+    table <- bind_rows(table, table2)
+    
+    aux <- nrow(table) - 1
+    table$hiddenColumn <- 0
+    table$hiddenColumn[aux] <- 1
+    tableFilter <- reactive({table})
+    datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0,ncol(table))))))  %>%
+      formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(2,13,15,19,20), `border-right` = "solid 1px") %>%
+      formatStyle(1:ncol(table), valueColumns = "hiddenColumn", `border-bottom` = styleEqual(1, "solid 3px")) %>%
+      formatStyle('Extension',
+                  backgroundColor = styleInterval(c(5.5, 6.5), c('lightcoral', 'white', 'lightgreen')))
+    
   })
-
-output$pitcher_percent_table <- renderDataTable({
-  table <- game
-  table2 <- game
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")]
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
-    }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
-    }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
-    }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
   
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
+  output$pitcher_percent_table <- renderDataTable({
+    table <- game
+    table2 <- game
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")]
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
     }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+    else{
+      pitchinput = input$PitchInput
     }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-    table2 <- table2 %>% filter(Pitcher %in% input$PitcherInput)
-  }
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
+    }
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
+    }
+    else{
+      countinput = input$CountInput
+    }
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+      table2 <- table2 %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
+    table <- table %>%
+      filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>%
+      group_by('Pitch' = TaggedPitchType) %>%
+      dplyr::summarize('No.' = n(),
+                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n()*100,2),
+                       in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
+                       "Zone %" = round(in_zones/n()*100, 2),
+                       out_zones = n() - in_zones,
+                       chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
+                       "Chase %" = round((chases/out_zones)*100, 2),
+                       'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
+                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay"))*100,2),
+                       "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n()*100, 2),
+                       'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n()*100,2)) %>%
+      ungroup() %>%
+      mutate('Usage %' = round(prop.table(No.)*100, 2)) %>%
+      select(-c('No.', in_zones, out_zones, chases)) %>%
+      select(Pitch, 'Usage %', 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'SwStr %', 'CSW %')
+    
+    table2 <- table2 %>%
+      filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), TaggedPitchType %in% pitchinput, Counts %in% countinput, BatterSide %in% splitinput) %>%
+      dplyr::summarize('Pitch' = "Total",
+                       #       'No.' = n(),
+                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n(),3)*100,
+                       in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
+                       "Zone %" = round(in_zones/n(), 3)*100,
+                       out_zones = n() - in_zones,
+                       chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
+                       "Chase %" = round(chases/out_zones, 3)*100,
+                       'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
+                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay")),3)*100,
+                       "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n(), 3)*100,
+                       'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n(),3)*100) %>%
+      select(-c(in_zones, out_zones, chases)) %>%
+      select(Pitch, 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'SwStr %', 'CSW %')
+    
+    table <- bind_rows(table, table2)
+    
+    aux <- nrow(table) - 1
+    table$hiddenColumn <- 0
+    table$hiddenColumn[aux] <- 1
+    tableFilter <- reactive({table})
+    datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0,ncol(table))))))  %>%
+      formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(2,13,15,19,20), `border-right` = "solid 1px") %>% 
+      formatStyle(1:ncol(table), valueColumns = "hiddenColumn", `border-bottom` = styleEqual(1, "solid 3px")) %>%
+      formatStyle('Strike %',
+                  backgroundColor = styleInterval(c(58.0, 62.0), c('lightcoral', 'white', 'lightgreen'))) %>%
+      formatStyle('Zone %',
+                  backgroundColor = styleInterval(c(47.5, 50.5), c('lightcoral', 'white', 'lightgreen'))) %>%
+      formatStyle('Whiff %',
+                  backgroundColor = styleInterval(c(20, 30), c('lightcoral', 'white', 'lightgreen'))) %>%
+      formatStyle('Chase %',
+                  backgroundColor = styleInterval(c(26, 30), c('lightcoral', 'white', 'lightgreen'))) %>%
+      formatStyle('CSW %',
+                  backgroundColor = styleInterval(c(26, 32), c('lightcoral', 'white', 'lightgreen'))) %>%
+      formatStyle('SwStr %',
+                  backgroundColor = styleInterval(c(7, 13), c('lightcoral', 'white', 'lightgreen')))
+    
+  })
   
-  table <- table %>%
-    filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>%
-    group_by('Pitch' = TaggedPitchType) %>%
-    dplyr::summarize('No.' = n(),
-                   'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n(),3)*100,
-                   in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
-                   "Zone %" = round(in_zones/n(), 3)*100,
-                   out_zones = n() - in_zones,
-                   chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
-                   "Chase %" = round(chases/out_zones, 3)*100,
-                   'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
-                                       sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay")),3)*100,
-                   "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n(), 3)*100,
-                   'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n(),3)*100) %>%
-    ungroup() %>%
-    mutate('Usage %' = round(prop.table(No.), 3)*100) %>%
-  select(-c('No.', in_zones, out_zones, chases)) %>%
-  select(Pitch, 'Usage %', 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'SwStr %', 'CSW %')
-  
-  table2 <- table2 %>%
-    filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), TaggedPitchType %in% pitchinput, Counts %in% countinput, BatterSide %in% splitinput) %>%
-    dplyr::summarize('Pitch' = "Total",
-              #       'No.' = n(),
-                     'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n(),3)*100,
-                     in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
-                     "Zone %" = round(in_zones/n(), 3)*100,
-                     out_zones = n() - in_zones,
-                     chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
-                     "Chase %" = round(chases/out_zones, 3)*100,
-                     'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
-                                         sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay")),3)*100,
-                     "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n(), 3)*100,
-                     'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n(),3)*100) %>%
-    select(-c(in_zones, out_zones, chases)) %>%
-    select(Pitch, 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'SwStr %', 'CSW %')
-
-  table <- bind_rows(table, table2)
-
-   aux <- nrow(table) - 1
-   table$hiddenColumn <- 0
-   table$hiddenColumn[aux] <- 1
-  tableFilter <- reactive({table})
-  datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0,ncol(table))))))  %>%
-   formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(2,13,15,19,20), `border-right` = "solid 1px") %>% 
-   formatStyle(1:ncol(table), valueColumns = "hiddenColumn", `border-bottom` = styleEqual(1, "solid 3px")) %>%
-  formatStyle('Strike %',
-              backgroundColor = styleInterval(c(58.0, 62.0), c('lightcoral', 'white', 'lightgreen'))) %>%
-  formatStyle('Zone %',
-              backgroundColor = styleInterval(c(47.5, 50.5), c('lightcoral', 'white', 'lightgreen'))) %>%
-  formatStyle('Whiff %',
-              backgroundColor = styleInterval(c(20, 30), c('lightcoral', 'white', 'lightgreen'))) %>%
-  formatStyle('Chase %',
-              backgroundColor = styleInterval(c(26, 30), c('lightcoral', 'white', 'lightgreen'))) %>%
-  formatStyle('CSW %',
-              backgroundColor = styleInterval(c(26, 32), c('lightcoral', 'white', 'lightgreen'))) %>%
-  formatStyle('SwStr %',
-              backgroundColor = styleInterval(c(7, 13), c('lightcoral', 'white', 'lightgreen')))
-
-})
-
-output$pitch_movement_plot <- renderPlot({
-  table <- game
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
+  output$pitch_movement_plot <- renderPlot({
+    table <- game
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
     }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
+    else{
+      pitchinput = input$PitchInput
     }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
-  
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
     }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
     }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+    else{
+      countinput = input$CountInput
     }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(any(input$WhiffInput == "Any")){
-    whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay", "HitByPitch")
-  }
-  else{
-    whiffinput = "StrikeSwinging"
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-  }
-
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(any(input$WhiffInput == "Any")){
+      whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay", "HitByPitch")
+    }
+    else{
+      whiffinput = "StrikeSwinging"
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
     dataFilter <- reactive({
       table %>%
         filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput, PitchCall %in% whiffinput)
@@ -473,234 +491,234 @@ output$pitch_movement_plot <- renderPlot({
       theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
       theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_text(size = 14))
   }, width = 400, height = 400)
-
-output$pitch_location_plot <- renderPlot({
-  table <- game
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
-    }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
-    }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
-    }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
   
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
+  output$pitch_location_plot <- renderPlot({
+    table <- game
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
     }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+    else{
+      pitchinput = input$PitchInput
     }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(any(input$WhiffInput == "Any")){
-    whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay", "HitByPitch")
-  }
-  else{
-    whiffinput = "StrikeSwinging"
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-  }
-  
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
+    }
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
+    }
+    else{
+      countinput = input$CountInput
+    }
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(any(input$WhiffInput == "Any")){
+      whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay", "HitByPitch")
+    }
+    else{
+      whiffinput = "StrikeSwinging"
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
     dataFilter <- reactive({
       table %>%
         filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput, PitchCall %in% whiffinput)
     })
-
-  ggplot(data = dataFilter(), aes(x = PlateLocSide, y = PlateLocHeight, color = TaggedPitchType)) +
-    xlim(-3,3) + ylim(0,5) + labs(color = "", title = "Pitch Location") +
-    scale_color_manual(values = pitch_colors) +
-    geom_rect(aes(xmin = -0.83, xmax = 0.83, ymin = 1.5, ymax = 3.5), alpha = 0, linewidth = 1, color = "black") +
-    geom_segment(aes(x = -0.708, y = 0.15, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") + # maybe linewidth instead of size
-    geom_segment(aes(x = -0.708, y = 0.3, xend = -0.708, yend = 0.15), linewidth = 1, color = "black") + 
-    geom_segment(aes(x = -0.708, y = 0.3, xend = 0, yend = 0.5), linewidth = 1, color = "black") + 
-    geom_segment(aes(x = 0, y = 0.5, xend = 0.708, yend = 0.3), linewidth = 1, color = "black") + 
-    geom_segment(aes(x = 0.708, y = 0.3, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") +
-    geom_point(size = 3, na.rm = TRUE, alpha = 0.7) +
-    theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
-    theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_blank())
-}, width = 350, height = 400)
-
-output$pitch_tilt_plot <- renderPlot({
-  convert_tilt <- function(time) {
-    time_parts <- strsplit(time, ":")[[1]]
-    hours <- as.numeric(time_parts[1])
-    hours <- ifelse(hours == 12, 0, hours)
-    minutes <- as.numeric(time_parts[2])
-    return(hours + minutes/60)
-  }
-  game$plotTilt <- mapply(convert_tilt, game$Tilt)
+    
+    ggplot(data = dataFilter(), aes(x = PlateLocSide, y = PlateLocHeight, color = TaggedPitchType)) +
+      xlim(-3,3) + ylim(0,5) + labs(color = "", title = "Pitch Location") +
+      scale_color_manual(values = pitch_colors) +
+      geom_rect(aes(xmin = -0.83, xmax = 0.83, ymin = 1.5, ymax = 3.5), alpha = 0, linewidth = 1, color = "black") +
+      geom_segment(aes(x = -0.708, y = 0.15, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") + # maybe linewidth instead of size
+      geom_segment(aes(x = -0.708, y = 0.3, xend = -0.708, yend = 0.15), linewidth = 1, color = "black") + 
+      geom_segment(aes(x = -0.708, y = 0.3, xend = 0, yend = 0.5), linewidth = 1, color = "black") + 
+      geom_segment(aes(x = 0, y = 0.5, xend = 0.708, yend = 0.3), linewidth = 1, color = "black") + 
+      geom_segment(aes(x = 0.708, y = 0.3, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") +
+      geom_point(size = 3, na.rm = TRUE, alpha = 0.7) +
+      theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
+      theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_blank())
+  }, width = 350, height = 400)
   
-  game <- game %>% subset(!is.na(plotTilt))
+  output$pitch_tilt_plot <- renderPlot({
+    convert_tilt <- function(time) {
+      time_parts <- strsplit(time, ":")[[1]]
+      hours <- as.numeric(time_parts[1])
+      hours <- ifelse(hours == 12, 0, hours)
+      minutes <- as.numeric(time_parts[2])
+      return(hours + minutes/60)
+    }
+    game$plotTilt <- mapply(convert_tilt, game$Tilt)
+    
+    game <- game %>% subset(!is.na(plotTilt))
+    
+    table <- game
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
+    }
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
+    }
+    else{
+      pitchinput = input$PitchInput
+    }
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
+    }
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
+    }
+    else{
+      countinput = input$CountInput
+    }
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
+    dataFilter <- reactive({
+      table %>%
+        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput)
+    })
+    
+    ggplot(data= dataFilter(), aes(x=plotTilt, fill=TaggedPitchType)) +
+      scale_color_manual(values = pitch_colors) +
+      labs(color = "", title = "Pitch Tilt", y = element_blank()) +
+      geom_histogram(binwidth=.5) +
+      geom_vline(xintercept = seq(0, 11, by = .5), colour = "white", size = 0.2) +
+      coord_polar(start = -7.5/360*2*pi) +
+      scale_x_continuous(breaks=seq(0, 11, by=1))+
+      #   scale_y_continuous(limits = c(-40, 100)) +
+      theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
+      theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_blank(),
+            legend.title = element_blank())
+  }, width = 400, height = 400)
   
-  table <- game
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
+  output$batted_ball_table <- renderDataTable({
+    table <- game
+    table2 <- game
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
     }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
+    else{
+      pitchinput = input$PitchInput
     }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
-  
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
     }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
     }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+    else{
+      countinput = input$CountInput
     }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-  }
-  
-  dataFilter <- reactive({
-    table %>%
-      filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput)
-  })
-  
-  ggplot(data= dataFilter(), aes(x=plotTilt, fill=TaggedPitchType)) +
-    scale_color_manual(values = pitch_colors) +
-    labs(color = "", title = "Pitch Tilt", y = element_blank()) +
-    geom_histogram(binwidth=.5) +
-    geom_vline(xintercept = seq(0, 11, by = .5), colour = "white", size = 0.2) +
-    coord_polar(start = -7.5/360*2*pi) +
-    scale_x_continuous(breaks=seq(0, 11, by=1))+
- #   scale_y_continuous(limits = c(-40, 100)) +
-    theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
-    theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_blank(),
-          legend.title = element_blank())
-}, width = 400, height = 400)
-
-output$batted_ball_table <- renderDataTable({
-  table <- game
-  table2 <- game
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
     }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+    else{
+      splitinput = input$SplitInput
     }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+      table2 <- table2 %>% filter(Pitcher %in% input$PitcherInput)
     }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
-  
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
-    }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
-    }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
-    }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-    table2 <- table2 %>% filter(Pitcher %in% input$PitcherInput)
-  }
-  
+    
     table <- table %>%
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, PlayResult != "Undefined", Counts %in% countinput) %>% 
       group_by('Pitch' = TaggedPitchType) %>%
@@ -738,11 +756,11 @@ output$batted_ball_table <- renderDataTable({
                        'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay"), 3)*100,
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(n()-sum(PlayResult == "IntentionalWalk"))),3)
       )
-     table <- bind_rows(table, table2)
+    table <- bind_rows(table, table2)
     
-     aux <- nrow(table) - 1
-     table$hiddenColumn <- 0
-     table$hiddenColumn[aux] <- 1
+    aux <- nrow(table) - 1
+    table$hiddenColumn <- 0
+    table$hiddenColumn[aux] <- 1
     tableFilter <- reactive({table})
     datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0,ncol(table)))))) %>%
       formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(3,8,10,15), `border-right` = "solid 1px") %>% 
@@ -760,271 +778,271 @@ output$batted_ball_table <- renderDataTable({
       formatStyle('BB %',
                   backgroundColor = styleInterval(c(6, 10), c('lightgreen', 'white', 'lightcoral')))
     
-})
-
-
-output$hit_location_plot <- renderPlot({
-  table <- game
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
-    }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
-    }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
-    }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
-  
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
-    }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
-    }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
-    }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-  }
-  
-  dataFilter <- reactive({
-    table %>%
-      filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, PitchCall == "InPlay", Counts %in% countinput)
   })
   
-ggplot(data = dataFilter(), aes(x = PlateLocSide, y = PlateLocHeight, color = TaggedPitchType)) +
-  xlim(-3,3) + ylim(0,5) + labs(color = "", title = "Pitch Location") +
-  scale_color_manual(values = pitch_colors) +
-  geom_rect(aes(xmin = -0.83, xmax = 0.83, ymin = 1.5, ymax = 3.5), alpha = 0, linewidth = 1, color = "black") +
-  geom_segment(aes(x = -0.708, y = 0.15, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") + # maybe linewidth instead of size
-  geom_segment(aes(x = -0.708, y = 0.3, xend = -0.708, yend = 0.15), linewidth = 1, color = "black") + 
-  geom_segment(aes(x = -0.708, y = 0.3, xend = 0, yend = 0.5), linewidth = 1, color = "black") + 
-  geom_segment(aes(x = 0, y = 0.5, xend = 0.708, yend = 0.3), linewidth = 1, color = "black") + 
-  geom_segment(aes(x = 0.708, y = 0.3, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") +
-  geom_point(size = 3, na.rm = TRUE, alpha = 0.7) +
-  theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
-  theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_blank())
-}, width = 350, height = 450)
-
-output$spray_chart <- renderPlot({
-  table <- game
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
-    }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
-    }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
-    }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
   
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
+  output$hit_location_plot <- renderPlot({
+    table <- game
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
     }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+    else{
+      pitchinput = input$PitchInput
     }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-  }
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
+    }
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
+    }
+    else{
+      countinput = input$CountInput
+    }
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
+    dataFilter <- reactive({
+      table %>%
+        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, PitchCall == "InPlay", Counts %in% countinput)
+    })
+    
+    ggplot(data = dataFilter(), aes(x = PlateLocSide, y = PlateLocHeight, color = TaggedPitchType)) +
+      xlim(-3,3) + ylim(0,5) + labs(color = "", title = "Pitch Location") +
+      scale_color_manual(values = pitch_colors) +
+      geom_rect(aes(xmin = -0.83, xmax = 0.83, ymin = 1.5, ymax = 3.5), alpha = 0, linewidth = 1, color = "black") +
+      geom_segment(aes(x = -0.708, y = 0.15, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") + # maybe linewidth instead of size
+      geom_segment(aes(x = -0.708, y = 0.3, xend = -0.708, yend = 0.15), linewidth = 1, color = "black") + 
+      geom_segment(aes(x = -0.708, y = 0.3, xend = 0, yend = 0.5), linewidth = 1, color = "black") + 
+      geom_segment(aes(x = 0, y = 0.5, xend = 0.708, yend = 0.3), linewidth = 1, color = "black") + 
+      geom_segment(aes(x = 0.708, y = 0.3, xend = 0.708, yend = 0.15), linewidth = 1, color = "black") +
+      geom_point(size = 3, na.rm = TRUE, alpha = 0.7) +
+      theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
+      theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_blank())
+  }, width = 350, height = 450)
   
-  dataFilter <- reactive({
-    table %>%
-      filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), PitchCall == 'InPlay', TaggedHitType != 'Bunt', abs(Bearing) < 50, BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>% 
-      select(Bearing, Distance, Angle, ExitSpeed, TaggedHitType, PlayResult)
-  })
+  output$spray_chart <- renderPlot({
+    table <- game
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
+    }
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
+    }
+    else{
+      pitchinput = input$PitchInput
+    }
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
+    }
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
+    }
+    else{
+      countinput = input$CountInput
+    }
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
+    dataFilter <- reactive({
+      table %>%
+        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), PitchCall == 'InPlay', TaggedHitType != 'Bunt', abs(Bearing) < 50, BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>% 
+        select(Bearing, Distance, Angle, ExitSpeed, TaggedHitType, PlayResult)
+    })
+    
+    geom_baseball(league = "MLB") +
+      geom_point(data = dataFilter(), aes(round(Distance * sin(Bearing * pi / 180), 3), round(Distance * cos(Bearing * pi / 180), 3),
+                                          color = ExitSpeed)) +
+      scale_color_gradient(low = 'blue', high = 'red') +
+      labs(title = "Spray Chart", x = "", y = "") + 
+      #theme_bw() + 
+      theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+            axis.text = element_blank(),
+            legend.position = "right",
+            legend.text = element_text(size = 12))
+    
+  }, width = 450, height = 450)
   
-  geom_baseball(league = "MLB") +
-    geom_point(data = dataFilter(), aes(round(Distance * sin(Bearing * pi / 180), 3), round(Distance * cos(Bearing * pi / 180), 3),
-                                        color = ExitSpeed)) +
-    scale_color_gradient(low = 'blue', high = 'red') +
-    labs(title = "Spray Chart", x = "", y = "") + 
-    #theme_bw() + 
-    theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
-          axis.text = element_blank(),
-          legend.position = "right",
-          legend.text = element_text(size = 12))
-
-}, width = 450, height = 450)
-
-
-output$heat_map <- renderPlot({
-  if(any(input$PitchInput == "All")){
-    pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
-  }
-  else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
-    input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
-    input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
-    input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
-    if(length(input1) == 1){
-      input1 <- c("Fastball", "Sinker")
-    }
-    if(length(input2) == 1){
-      input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
-    }
-    if(length(input3) == 1){
-      input3 <- c("ChangeUp", "Splitter")
-    }
-    pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
-    pitchinput <- c(pitchinput, input1, input2, input3)
-  }
-  else{
-    pitchinput = input$PitchInput
-  }
   
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
+  output$heat_map <- renderPlot({
+    if(any(input$PitchInput == "All")){
+      pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
+    else if(any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))){
+      input1 <- input$PitchInput[input$PitchInput %in% c("Primaries")] 
+      input2 <- input$PitchInput[input$PitchInput %in% c("Breaking Balls")]
+      input3 <- input$PitchInput[input$PitchInput %in% c("OffSpeed")]
+      if(length(input1) == 1){
+        input1 <- c("Fastball", "Sinker")
+      }
+      if(length(input2) == 1){
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if(length(input3) == 1){
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")]
+      pitchinput <- c(pitchinput, input1, input2, input3)
     }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+    else{
+      pitchinput = input$PitchInput
     }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
+    }
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
+    }
+    else{
+      countinput = input$CountInput
+    }
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    
+    dataFilter <- reactive({
+      game %>%
+        filter(Pitcher == input$PitcherInput,
+               between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput)
+    })
+    ggplot(dataFilter(), aes(x = PlateLocSide, y = PlateLocHeight)) +
+      stat_density_2d(aes(fill = ..density..), geom = 'raster', contour = F) +
+      scale_fill_gradientn(colours = c("blue", "white", "red")) +
+      annotate("rect", xmin = -1, xmax = 1,
+               ymin = 1.6,ymax = 3.4,
+               fill= NA,color= "black", 
+               alpha = .1) +
+      ylim(1, 4) + xlim(-1.8, 1.8) + theme_bw() + 
+      theme_classic() +
+      xlab("Horizontal Pitch Location") +
+      ylab("Vertical Pitch Location") +
+      ggtitle("Pitch Location Heat Map", subtitle = "Pitcher's Perspective") +
+      facet_wrap(~TaggedPitchType, ncol = 3) +
+      guides(fill = FALSE)
+  }, width = 700, height = 400)
   
-  dataFilter <- reactive({
-    game %>%
-      filter(Pitcher == input$PitcherInput,
-             between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput)
-  })
-  ggplot(dataFilter(), aes(x = PlateLocSide, y = PlateLocHeight)) +
-    stat_density_2d(aes(fill = ..density..), geom = 'raster', contour = F) +
-    scale_fill_gradientn(colours = c("blue", "white", "red")) +
-    annotate("rect", xmin = -1, xmax = 1,
-             ymin = 1.6,ymax = 3.4,
-             fill= NA,color= "black", 
-             alpha = .1) +
-    ylim(1, 4) + xlim(-1.8, 1.8) + theme_bw() + 
-    theme_classic() +
-    xlab("Horizontal Pitch Location") +
-    ylab("Vertical Pitch Location") +
-    ggtitle("Pitch Location Heat Map", subtitle = "Pitcher's Perspective") +
-    facet_wrap(~TaggedPitchType, ncol = 3) +
-    guides(fill = FALSE)
-}, width = 700, height = 400)
-
-output$pitch_usage_plot <- renderPlot({
-  table <- game
-  
-  if(any(input$CountInput == "All")){
-    countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
-  }
-  else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
-    input4 <- input$CountInput[input$CountInput %in% c("Even")] 
-    input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
-    input6 <- input$CountInput[input$CountInput %in% c("Behind")]
-    if(length(input4) == 1){
-      input4 <- c("0-0", "1-1", "2-2")
+  output$pitch_usage_plot <- renderPlot({
+    table <- game
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
     }
-    if(length(input5) == 1){
-      input5 <- c("0-1", "0-2", "1-2")
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
     }
-    if(length(input6) == 1){
-      input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+    else{
+      countinput = input$CountInput
     }
-    countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
-    countinput <- c(countinput, input4, input5, input6)
-  }
-  else{
-    countinput = input$CountInput
-  }
-  if(input$SplitInput == "Both"){
-    splitinput = c("Right", "Left")
-  }
-  else{
-    splitinput = input$SplitInput
-  }
-  if(input$PitcherInput != "All") {
-    table <- table %>% filter(Pitcher %in% input$PitcherInput)
-  }
-
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
     dataFilter <- reactive({
       table %>%
         filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, Counts %in% countinput) %>%
@@ -1041,26 +1059,26 @@ output$pitch_usage_plot <- renderPlot({
       labs(x = "Date", y = "Usage %", color = " ", title = "Usage % By Outing") +
       theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
       theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_text(size = 14))
-
+    
+    
+  }, width = 900, height = 450)
   
-}, width = 900, height = 450)
-
-output$pitch_velocity_plot <- renderPlot({
-  table <- game
-  dataFilter <- reactive({
-    table %>%
-      filter(Pitcher == input$PitcherInput, between(Date, input$DateRangeInput[1], input$DateRangeInput[2])) %>%
-      mutate(PitchNo = row_number())
-  })
-  ggplot(data = dataFilter()) + 
-    geom_line(aes(y = RelSpeed, x = PitchNo, color = TaggedPitchType), size = 2) + 
-    scale_color_manual(values = pitch_colors) +
-    labs(x = "Pitch Count", y = "Pitch Velocity (MPH)", color = " ", title = "Pitch Velocity") + 
-    ylim(65, 95) + 
-    theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5), axis.text = element_text(size = 12)) +
-    theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_text(size = 14))
-}, width = 900, height = 400)
-   
+  output$pitch_velocity_plot <- renderPlot({
+    table <- game
+    dataFilter <- reactive({
+      table %>%
+        filter(Pitcher == input$PitcherInput, between(Date, input$DateRangeInput[1], input$DateRangeInput[2])) %>%
+        mutate(PitchNo = row_number())
+    })
+    ggplot(data = dataFilter()) + 
+      geom_line(aes(y = RelSpeed, x = PitchNo, color = TaggedPitchType), size = 2) + 
+      scale_color_manual(values = pitch_colors) +
+      labs(x = "Pitch Count", y = "Pitch Velocity (MPH)", color = " ", title = "Pitch Velocity") + 
+      ylim(65, 95) + 
+      theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5), axis.text = element_text(size = 12)) +
+      theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_text(size = 14))
+  }, width = 900, height = 400)
+  
 }
 
 shinyApp(ui = ui, server = server)
