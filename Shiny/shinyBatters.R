@@ -1,10 +1,20 @@
+# Since sportyR package is not on CRAN, it needs to be explicitly installed for shiny to work (i think)
+
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+if (!requireNamespace("sportyR", quietly = TRUE)) {
+  remotes::install_github("sportsdataverse/sportyR")
+}
+
 library(shiny)
 library(readr)
 library(lubridate)
 library(tidyverse)
 library(DT)
-library(sportyR)
-
+library(sportyR) 
+library(rsconnect)
+ 
 ######### Notes ###########
 
 # 1. summary_table - done
@@ -244,7 +254,7 @@ server <- function(input, output, session) {
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(PA-sum(PlayResult == "IntentionalWalk"))),3),
                        'ISO' = round((sum(PlayResult == "Double", na.rm = TRUE) + (2*sum(PlayResult == "Triple", na.rm = TRUE)) + (3*sum(PlayResult == "HomeRun", na.rm = TRUE))) / (sum(PlayResult != "Undefined") - sum(PlayResult %in% c("Walk", "HitByPitch", "IntentionalWalk", "Sacrifice"))),3)
       ) %>% 
-    ungroup() %>%
+      ungroup() %>%
       select(-c('No.', in_zones, out_zones, chases)) %>%
       select(Pitch, 'PA', 'BBE', 'K %', 'BB %', 'wOBA', 'ISO', 'Chase %', 'Whiff %')
     
@@ -265,8 +275,8 @@ server <- function(input, output, session) {
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(PA-sum(PlayResult == "IntentionalWalk"))),3),
                        'ISO' = round((sum(PlayResult == "Double", na.rm = TRUE) + (2*sum(PlayResult == "Triple", na.rm = TRUE)) + (3*sum(PlayResult == "HomeRun", na.rm = TRUE))) / (sum(PlayResult != "Undefined") - sum(PlayResult %in% c("Walk", "HitByPitch", "IntentionalWalk", "Sacrifice"))),3)
       ) %>% 
-    select(-c(in_zones, out_zones, chases)) %>%
-    select(Pitch, 'PA', 'BBE', 'K %', 'BB %', 'wOBA', 'ISO', 'Chase %', 'Whiff %')
+      select(-c(in_zones, out_zones, chases)) %>%
+      select(Pitch, 'PA', 'BBE', 'K %', 'BB %', 'wOBA', 'ISO', 'Chase %', 'Whiff %')
     
     table <- bind_rows(table, table2)
     
@@ -285,7 +295,7 @@ server <- function(input, output, session) {
                   backgroundColor = styleInterval(c(20, 30), c('lightgreen', 'white', 'lightcoral'))) %>%
       formatStyle('Chase %',
                   backgroundColor = styleInterval(c(26, 30), c('lightgreen', 'white', 'lightcoral')))
-      
+    
   })
   
   ###############################################################################
@@ -357,15 +367,15 @@ server <- function(input, output, session) {
                        'Avg. EV' = round(mean(ExitSpeed, na.rm = TRUE),1),
                        'Max. EV' = round(max(ExitSpeed, na.rm = TRUE),1),
                        'Avg. LA' = round(mean(Angle, na.rm = TRUE),1),
-                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay"), 3)*100,
-                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay"), 3)*100,
-                       'LF %' = round(sum(Bearing >= -60 & Bearing <= -20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1), 3) * 100,
-                       'CF %' = round(sum(Bearing >= -20 & Bearing <= 20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1), 3) * 100,
-                       'RF %' = round(sum(Bearing >= 20 & Bearing <= 60 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1), 3) * 100
+                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 2),
+                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 2),
+                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 2),
+                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 2),
+                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 2),
+                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 2),
+                       'LF %' = round(sum(Bearing >= -60 & Bearing <= -20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 2),
+                       'CF %' = round(sum(Bearing >= -20 & Bearing <= 20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 2),
+                       'RF %' = round(sum(Bearing >= 20 & Bearing <= 60 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 2)
       ) %>%
       ungroup()
     
