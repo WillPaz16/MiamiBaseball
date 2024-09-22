@@ -15,21 +15,21 @@ library(DT)
 library(sportyR) 
 library(rsconnect)
  
-######### Notes ###########
+######### TO DO ###########
 
-# 1. summary_table - done
-#    PA | BBE | H | 1B | 2B | 3B | HR | SO | BB | HBP
-# 2. batted_ball_data - done
-#    Pitch | PA | BBE | Avg. EV | Max. EV | Avg. LA | Hard Hit % | Barrel % | GB % | FB % | LD % | PU % | Pull % | Center % | Oppo %
-# 3. advanced_data
-#    Pitch | PA | BBE | Usage % | K % | BB % | Chase % | Whiff % | wOBA | ISO
-# 4. charts - done
-#    pitch_location | spray_chart
+#* Filter
+#*     Filter by AB
+#*     Filter by Pitching team
+#*     Filter by opposing pitcher
+#* Add basic stat table (avg, slg, ops, etc.)
+#* 
+#* THE BIG ONE 
+#*    Need swing decision/tendency section (discussion) 
 
 ############################
 
 # csv read
-game <- read.csv("cleanedBatterGames.csv")
+game <- read.csv("cleanedBatterFall2024.csv")
 game$Date <- as.Date(game$Date)
 game$TaggedPitchType <- factor(game$TaggedPitchType, levels = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter"))
 pitch_colors <- c('Fastball' = '#d22d49', 'Sinker' = '#fe9d00', 'Cutter' = '#933f2c', 'Curveball' = '#00d1ed',
@@ -246,11 +246,11 @@ server <- function(input, output, session) {
                        in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
                        out_zones = n() - in_zones,
                        chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
-                       "Chase %" = round(chases/out_zones, 3)*100,
+                       "Chase %" = round(chases/out_zones*100, 1),
                        'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
-                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay")),3)*100,
-                       'K %' = round(sum(PlayResult == "Strikeout")/PA, 3)*100,
-                       'BB %' = round(sum(PlayResult == "Walk")/PA, 3)*100,
+                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay"))*100,1),
+                       'K %' = round(sum(PlayResult == "Strikeout")/PA*100, 1),
+                       'BB %' = round(sum(PlayResult == "Walk")/PA*100, 1),
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(PA-sum(PlayResult == "IntentionalWalk"))),3),
                        'ISO' = round((sum(PlayResult == "Double", na.rm = TRUE) + (2*sum(PlayResult == "Triple", na.rm = TRUE)) + (3*sum(PlayResult == "HomeRun", na.rm = TRUE))) / (sum(PlayResult != "Undefined") - sum(PlayResult %in% c("Walk", "HitByPitch", "IntentionalWalk", "Sacrifice"))),3)
       ) %>% 
@@ -267,11 +267,11 @@ server <- function(input, output, session) {
                        in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
                        out_zones = n() - in_zones,
                        chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
-                       "Chase %" = round(chases/out_zones, 3)*100,
+                       "Chase %" = round(chases/out_zones*100, 1),
                        'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
-                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay")),3)*100,
-                       'K %' = round(sum(PlayResult == "Strikeout")/PA, 3)*100,
-                       'BB %' = round(sum(PlayResult == "Walk")/PA, 3)*100,
+                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay"))*100,1),
+                       'K %' = round(sum(PlayResult == "Strikeout")/PA*100, 1),
+                       'BB %' = round(sum(PlayResult == "Walk")/PA*100, 1),
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(PA-sum(PlayResult == "IntentionalWalk"))),3),
                        'ISO' = round((sum(PlayResult == "Double", na.rm = TRUE) + (2*sum(PlayResult == "Triple", na.rm = TRUE)) + (3*sum(PlayResult == "HomeRun", na.rm = TRUE))) / (sum(PlayResult != "Undefined") - sum(PlayResult %in% c("Walk", "HitByPitch", "IntentionalWalk", "Sacrifice"))),3)
       ) %>% 
@@ -367,15 +367,15 @@ server <- function(input, output, session) {
                        'Avg. EV' = round(mean(ExitSpeed, na.rm = TRUE),1),
                        'Max. EV' = round(max(ExitSpeed, na.rm = TRUE),1),
                        'Avg. LA' = round(mean(Angle, na.rm = TRUE),1),
-                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 2),
-                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 2),
-                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 2),
-                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 2),
-                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 2),
-                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 2),
-                       'LF %' = round(sum(Bearing >= -60 & Bearing <= -20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 2),
-                       'CF %' = round(sum(Bearing >= -20 & Bearing <= 20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 2),
-                       'RF %' = round(sum(Bearing >= 20 & Bearing <= 60 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 2)
+                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
+                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
+                       'LF %' = round(sum(Bearing >= -60 & Bearing <= -20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 1),
+                       'CF %' = round(sum(Bearing >= -20 & Bearing <= 20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 1),
+                       'RF %' = round(sum(Bearing >= 20 & Bearing <= 60 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 1)
       ) %>%
       ungroup()
     
@@ -387,15 +387,15 @@ server <- function(input, output, session) {
                        'Avg. EV' = round(mean(ExitSpeed, na.rm = TRUE),1),
                        'Max. EV' = round(max(ExitSpeed, na.rm = TRUE),1),
                        'Avg. LA' = round(mean(Angle, na.rm = TRUE),1),
-                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay"), 3)*100,
-                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay"), 3)*100,
-                       'LF %' = round(sum(Bearing >= -60 & Bearing <= -20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1), 3) * 100,
-                       'CF %' = round(sum(Bearing >= -20 & Bearing <= 20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1), 3) * 100,
-                       'RF %' = round(sum(Bearing >= 20 & Bearing <= 60 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1), 3) * 100
+                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
+                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
+                       'LF %' = round(sum(Bearing >= -60 & Bearing <= -20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 1),
+                       'CF %' = round(sum(Bearing >= -20 & Bearing <= 20 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 1),
+                       'RF %' = round(sum(Bearing >= 20 & Bearing <= 60 & !is.na(Bearing)) / max(sum(Bearing >= -60 & Bearing <= 60 & !is.na(Bearing)), 1)*100, 1) 
       )
     table <- bind_rows(table, table2)
     
