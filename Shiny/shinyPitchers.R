@@ -14,6 +14,7 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
 
 #* Pitch Result function isn't working, fix it maybe add more results 
 #* Get date defaulted
+#* Make the pitch velocity over time more representative of over time/game
 #* Filters
 #*      Filter by batter team
 #*      Filter by batter
@@ -39,7 +40,7 @@ library(DT)
 library(sportyR)
 
 # csv read
-game <- read.csv("cleanedPitcherGames.csv")
+game <- read.csv("cleanedPitcherFall2024.csv")
 game$Date <- as.Date(game$Date)
 game$TaggedPitchType <- factor(game$TaggedPitchType, levels = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter"))
 pitch_colors <- c('Fastball' = '#d22d49', 'Sinker' = '#fe9d00', 'Cutter' = '#933f2c', 'Curveball' = '#00d1ed',
