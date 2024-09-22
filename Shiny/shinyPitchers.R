@@ -12,7 +12,7 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
 
 # TO DO
 
-#* Pitch Result function isn't working, fix it maybe add more results
+#* Pitch Result function isn't working, fix it maybe add more results 
 #* Get date defaulted
 #* Filters
 #*      Filter by batter team
@@ -742,14 +742,14 @@ server <- function(input, output, session) {
                        'Avg. EV' = round(mean(ExitSpeed, na.rm = TRUE),1),
                        'Max. EV' = round(max(ExitSpeed, na.rm = TRUE),1),
                        'Avg. LA' = round(mean(Angle, na.rm = TRUE),1),
-                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'K %' = round(sum(PlayResult == "Strikeout")/n(), 3)*100,
-                       'BB %' = round(sum(PlayResult == "Walk")/n(), 3)*100,
-                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay"), 3)*100,
-                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay"), 3)*100,
+                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'K %' = round(sum(PlayResult == "Strikeout")/n()*100, 1),
+                       'BB %' = round(sum(PlayResult == "Walk")/n()*100, 1),
+                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
+                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(n()-sum(PlayResult == "IntentionalWalk"))),3)
       ) %>%
       ungroup()
@@ -761,14 +761,14 @@ server <- function(input, output, session) {
                        'Avg. EV' = round(mean(ExitSpeed, na.rm = TRUE),1),
                        'Max. EV' = round(max(ExitSpeed, na.rm = TRUE),1),
                        'Avg. LA' = round(mean(Angle, na.rm = TRUE),1),
-                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay"), 3)*100,
-                       'K %' = round(sum(PlayResult == "Strikeout")/n(), 3)*100,
-                       'BB %' = round(sum(PlayResult == "Walk")/n(), 3)*100,
-                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay"), 3)*100,
-                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay"), 3)*100,
-                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay"), 3)*100,
+                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
+                       'K %' = round(sum(PlayResult == "Strikeout")/n()*100, 1),
+                       'BB %' = round(sum(PlayResult == "Walk")/n()*100, 1),
+                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
+                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(n()-sum(PlayResult == "IntentionalWalk"))),3)
       )
     table <- bind_rows(table, table2)
