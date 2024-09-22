@@ -8,6 +8,21 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
   remotes::install_github("sportsdataverse/sportyR")
 }
 
+#################################
+
+# TO DO
+
+#* Add BB%
+#* Add K%
+#* Add K/BB%
+#* Pitch Result function isn't working, fix it
+#* Get date defaulted
+#* Filter by batter team
+#* Filter by batter
+#* Spray Chart isn't working either
+
+#################################
+
 library(shiny)
 library(readr)
 library(lubridate)
@@ -370,15 +385,15 @@ server <- function(input, output, session) {
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), TaggedPitchType %in% pitchinput, Counts %in% countinput, BatterSide %in% splitinput) %>%
       dplyr::summarize('Pitch' = "Total",
                        #       'No.' = n(),
-                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n(),3)*100,
+                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n()*100,2),
                        in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
-                       "Zone %" = round(in_zones/n(), 3)*100,
+                       "Zone %" = round(in_zones/n()*100, 2),
                        out_zones = n() - in_zones,
                        chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
-                       "Chase %" = round(chases/out_zones, 3)*100,
+                       "Chase %" = round(chases/out_zones*100, 2),
                        'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
-                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay")),3)*100,
-                       "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n(), 3)*100,
+                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay"))*100,2),
+                       "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n()*100, 2),
                        'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n(),3)*100) %>%
       select(-c(in_zones, out_zones, chases)) %>%
       select(Pitch, 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'SwStr %', 'CSW %')
