@@ -42,7 +42,7 @@ library(DT)
 library(sportyR)
 
 # csv read
-game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedPitcherFall2024.csv")
+game <- read.csv("cleanedPitcherFall2024.csv")
 
 game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)  # this can be deleted once fallDataRMD preprocessing is working properly
 
@@ -760,10 +760,10 @@ server <- function(input, output, session) {
         'K %' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / n() * 100, 1),
         'BB %' = round(sum(PlayResult == "Walk", na.rm = TRUE) / n() * 100, 1),
         'K:BB Ratio' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / sum(PlayResult == "Walk", na.rm = TRUE), 1),
+        'Out %' = round(sum(PlayResult %in% c("Out","Strikeout","Sacrifice","FieldersChoice")) / n() * 100, 1),
         'GB %' = round(sum(TaggedHitType == "GroundBall", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
-        'FB %' = round(sum(TaggedHitType == "FlyBall", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'FB %' = round(sum(TaggedHitType == "FlyBall" | TaggedHitType == "Popup", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
         'LD %' = round(sum(TaggedHitType == "LineDrive", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
-        'PU %' = round(sum(TaggedHitType == "Popup", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
         'wOBA' = round(
           (
             (.693 * sum(PlayResult == "Walk", na.rm = TRUE) +
@@ -790,10 +790,10 @@ server <- function(input, output, session) {
                        'K %' = round(sum(PlayResult == "Strikeout")/n()*100, 1),
                        'BB %' = round(sum(PlayResult == "Walk")/n()*100, 1),
                        'K:BB Ratio' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / sum(PlayResult == "Walk", na.rm = TRUE), 1),
+                       'Out %' = round(sum(PlayResult %in% c("Out","Strikeout","Sacrifice","FieldersChoice")) / n() * 100, 1),
                        'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
-                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
+                       'FB %' = round(sum(TaggedHitType == "FlyBall" | TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
                        'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
-                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(n()-sum(PlayResult == "IntentionalWalk"))),3)
       )
     table <- bind_rows(table, table2)
@@ -803,7 +803,7 @@ server <- function(input, output, session) {
     table$hiddenColumn[aux] <- 1
     tableFilter <- reactive({table})
     datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0,ncol(table)))))) %>%
-      formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(3,8,10,15), `border-right` = "solid 1px") %>% 
+      formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(3,8,12,15), `border-right` = "solid 1px") %>% 
       formatStyle(1:ncol(table), valueColumns = "hiddenColumn", `border-bottom` = styleEqual(1, "solid 3px")) %>%
       formatStyle('wOBA',
                   backgroundColor = styleInterval(c(.300, .340), c('lightgreen', 'white', 'lightcoral'))) %>%
