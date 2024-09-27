@@ -22,6 +22,7 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
 #* We want to eventually create an NCAA dashboard which is essentially the same as this pitcher dashboard..
 #* but instead adds a filter for select team and select opponent across all Trackman data
 #* We also want to add a opposing team filter for the pitching dashboard
+#* Min and Max dates arent working, presumably issue with preprocessing (for now just used manual start and sys.date for end)
 #*      
 #################################
 
@@ -43,7 +44,9 @@ library(sportyR)
 # csv read
 game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedPitcherFall2024.csv")
 
-game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)  # this can be deleted once fallDataRMD is working properly
+game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)  # this can be deleted once fallDataRMD preprocessing is working properly
+
+game$Date <- as.Date(game$Date) # this can also be deleted once preprocessing is fixed
 
 game$Date <- as.Date(game$Date)
 game$TaggedPitchType <- factor(game$TaggedPitchType, levels = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter"))
@@ -116,8 +119,12 @@ ui <- fluidPage(
     sidebarPanel(
       selectInput(inputId = "PitcherInput", label = "Select Pitcher", 
                   choices = c(All = "All", sort(unique(game$Pitcher)))),
-      dateRangeInput(inputId = "DateRangeInput", label = "Select Date Range", 
-                     start = min(game$Date), end = max(game$Date)),
+      dateRangeInput(inputId = "DateRangeInput", 
+                     label = "Select Date Range", 
+                     start = as.Date("2024-08-01"), 
+                     end = Sys.Date(),  # Set the default end date to the current date
+                     min = min(game$Date), 
+                     max = max(game$Date)),
       selectInput(inputId = "SplitInput", label = "Select Batter Hand", 
                   choices = c("Both", sort(unique(game$BatterSide)))),
       selectInput(inputId = "PitchInput", label = "Select Pitch", 
