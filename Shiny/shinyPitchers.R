@@ -12,16 +12,17 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
 
 # TO DO
 
-#* Pitch Result function isn't working, fix it maybe add more results 
-#* Get date defaulted
-#* Make the pitch velocity over time more representative of over time/game
+#* Pitch Result function isn't working, fix it maybe add more results (filter by whiffs doesnt actually filter by whiffs)
+#* Get date defaulted (when shiny loads, there is no default date)
+#* Make the pitch velocity over time more representative of over time/game (right now viz is only showing by pitch count not inning)
 #* Filters
-#*      Filter by batter team
-#*      Filter by batter
-#* Batted ball table is not appearing
-#*      Add BB% 
-#*      Add K/BB%
-
+#*      Filter by batter team (select opposing team)
+#*      Filter by batter (batter on opponent team)
+#*      
+#* We want to eventually create an NCAA dashboard which is essentially the same as this pitcher dashboard..
+#* but instead adds a filter for select team and select opponent across all Trackman data
+#* We also want to add a opposing team filter for the pitching dashboard
+#*      
 #################################
 
 library(shiny)
@@ -40,7 +41,10 @@ library(DT)
 library(sportyR)
 
 # csv read
-game <- read.csv("cleanedPitcherFall2024.csv")
+game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedPitcherFall2024.csv")
+
+game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)  # this can be deleted once fallDataRMD is working properly
+
 game$Date <- as.Date(game$Date)
 game$TaggedPitchType <- factor(game$TaggedPitchType, levels = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter"))
 pitch_colors <- c('Fastball' = '#d22d49', 'Sinker' = '#fe9d00', 'Cutter' = '#933f2c', 'Curveball' = '#00d1ed',
@@ -738,22 +742,34 @@ server <- function(input, output, session) {
     table <- table %>%
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, PlayResult != "Undefined", Counts %in% countinput) %>% 
       group_by('Pitch' = TaggedPitchType) %>%
-      dplyr::summarize('PA' = n(),
-                       'BBE' = sum(PitchCall == "InPlay"),
-                       'Avg. EV' = round(mean(ExitSpeed, na.rm = TRUE),1),
-                       'Max. EV' = round(max(ExitSpeed, na.rm = TRUE),1),
-                       'Avg. LA' = round(mean(Angle, na.rm = TRUE),1),
-                       'Hard Hit %' = round(sum(HardHit, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
-                       'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
-                       'K %' = round(sum(PlayResult == "Strikeout")/n()*100, 1),
-                       'BB %' = round(sum(PlayResult == "Walk")/n()*100, 1),
-                       'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
-                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
-                       'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
-                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
-                       'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(n()-sum(PlayResult == "IntentionalWalk"))),3)
+      dplyr::summarize(
+        'PA' = n(),
+        'BBE' = sum(PitchCall == "InPlay", na.rm = TRUE),
+        'Avg. EV' = round(mean(ExitSpeed, na.rm = TRUE), 1),
+        'Max. EV' = round(max(ExitSpeed, na.rm = TRUE), 1),
+        'Avg. LA' = round(mean(Angle, na.rm = TRUE), 1),
+        'Hard Hit %' = round(sum(HardHit, na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'Barrel %' = round(sum(Barrel, na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'K %' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / n() * 100, 1),
+        'BB %' = round(sum(PlayResult == "Walk", na.rm = TRUE) / n() * 100, 1),
+        'K:BB Ratio' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / sum(PlayResult == "Walk", na.rm = TRUE), 1),
+        'GB %' = round(sum(TaggedHitType == "GroundBall", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'FB %' = round(sum(TaggedHitType == "FlyBall", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'LD %' = round(sum(TaggedHitType == "LineDrive", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'PU %' = round(sum(TaggedHitType == "Popup", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'wOBA' = round(
+          (
+            (.693 * sum(PlayResult == "Walk", na.rm = TRUE) +
+               .693 * sum(PlayResult == "HitByPitch", na.rm = TRUE) +
+               .884 * sum(PlayResult == "Single", na.rm = TRUE) +
+               1.261 * sum(PlayResult == "Double", na.rm = TRUE) +
+               1.601 * sum(PlayResult == "Triple", na.rm = TRUE) +
+               2.072 * sum(PlayResult == "HomeRun", na.rm = TRUE))
+          ) / (n() - sum(PlayResult == "IntentionalWalk", na.rm = TRUE)), 3)
       ) %>%
       ungroup()
+    
+
     table2 <- table2 %>%
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, PlayResult != "Undefined", Counts %in% countinput) %>%
       dplyr::summarize('Pitch' = "Total",
@@ -766,6 +782,7 @@ server <- function(input, output, session) {
                        'Barrel %' = round(sum(Barrel, na.rm = TRUE)/sum(PitchCall == "InPlay")*100, 1),
                        'K %' = round(sum(PlayResult == "Strikeout")/n()*100, 1),
                        'BB %' = round(sum(PlayResult == "Walk")/n()*100, 1),
+                       'K:BB Ratio' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / sum(PlayResult == "Walk", na.rm = TRUE), 1),
                        'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
                        'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
                        'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
