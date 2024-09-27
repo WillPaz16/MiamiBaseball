@@ -94,6 +94,13 @@ is_barrel <- function(exit_velo, launch_angle) {
   return(FALSE)
 }
 
+add_hard_hit <- function(data) {
+  data <- data %>%
+    mutate(HardHit = ifelse(ExitSpeed >= 95, TRUE, FALSE))
+  return(data)
+}
+
+
 # Function to apply barrel calculation (vectorized)
 apply_barrel_calculation <- function(data) {
   data$Barrel <- mapply(is_barrel, data$ExitSpeed, data$Angle)
@@ -163,7 +170,8 @@ cleanedPitcherFall <- function(data) {
     format_date() %>%
     generate_counts() %>%
     clean_play_result() %>%
-    apply_barrel_calculation()
+    apply_barrel_calculation() %>% 
+    add_hard_hit()
   
   # Process tilt data
   tiltData <- clean_tilt_data(total)
