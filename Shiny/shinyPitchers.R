@@ -13,7 +13,6 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
 # TO DO
 
 #* Pitch Result function isn't working, fix it maybe add more results (filter by whiffs doesnt actually filter by whiffs)
-#* Get date defaulted (when shiny loads, there is no default date)
 #* Make the pitch velocity over time more representative of over time/game (right now viz is only showing by pitch count not inning)
 #* Filters
 #*      Filter by batter team (select opposing team)
@@ -21,8 +20,6 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
 #*      
 #* We want to eventually create an NCAA dashboard which is essentially the same as this pitcher dashboard..
 #* but instead adds a filter for select team and select opponent across all Trackman data
-#* We also want to add a opposing team filter for the pitching dashboard
-#* Min and Max dates arent working, presumably issue with preprocessing (for now just used manual start and sys.date for end)
 #*      
 #################################
 
@@ -42,7 +39,7 @@ library(DT)
 library(sportyR)
 
 # csv read
-game <- read.csv("cleanedPitcherFall2024.csv")
+game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedPitcherFall2024.csv")
 
 game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)  # this can be deleted once fallDataRMD preprocessing is working properly
 
@@ -121,10 +118,10 @@ ui <- fluidPage(
                   choices = c(All = "All", sort(unique(game$Pitcher)))),
       dateRangeInput(inputId = "DateRangeInput", 
                      label = "Select Date Range", 
-                     start = as.Date("2024-08-01"), 
-                     end = Sys.Date(),  # Set the default end date to the current date
-                     min = min(game$Date), 
-                     max = max(game$Date)),
+                     start = as.Date(min(game$Date, na.rm = TRUE)), 
+                     end = as.Date(max(game$Date, na.rm = TRUE)), 
+                     min = min(game$Date, na.rm = TRUE), 
+                     max = max(game$Date, na.rm = TRUE)),
       selectInput(inputId = "SplitInput", label = "Select Batter Hand", 
                   choices = c("Both", sort(unique(game$BatterSide)))),
       selectInput(inputId = "PitchInput", label = "Select Pitch", 
@@ -760,10 +757,10 @@ server <- function(input, output, session) {
         'K %' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / n() * 100, 1),
         'BB %' = round(sum(PlayResult == "Walk", na.rm = TRUE) / n() * 100, 1),
         'K:BB Ratio' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / sum(PlayResult == "Walk", na.rm = TRUE), 1),
-        'Out %' = round(sum(PlayResult %in% c("Out","Strikeout","Sacrifice","FieldersChoice")) / n() * 100, 1),
         'GB %' = round(sum(TaggedHitType == "GroundBall", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
-        'FB %' = round(sum(TaggedHitType == "FlyBall" | TaggedHitType == "Popup", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'FB %' = round(sum(TaggedHitType == "FlyBall", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
         'LD %' = round(sum(TaggedHitType == "LineDrive", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
+        'PU %' = round(sum(TaggedHitType == "Popup", na.rm = TRUE) / sum(PitchCall == "InPlay", na.rm = TRUE) * 100, 1),
         'wOBA' = round(
           (
             (.693 * sum(PlayResult == "Walk", na.rm = TRUE) +
@@ -790,10 +787,10 @@ server <- function(input, output, session) {
                        'K %' = round(sum(PlayResult == "Strikeout")/n()*100, 1),
                        'BB %' = round(sum(PlayResult == "Walk")/n()*100, 1),
                        'K:BB Ratio' = round(sum(PlayResult == "Strikeout", na.rm = TRUE) / sum(PlayResult == "Walk", na.rm = TRUE), 1),
-                       'Out %' = round(sum(PlayResult %in% c("Out","Strikeout","Sacrifice","FieldersChoice")) / n() * 100, 1),
                        'GB %' = round(sum(TaggedHitType == "GroundBall")/sum(PitchCall == "InPlay")*100, 1),
-                       'FB %' = round(sum(TaggedHitType == "FlyBall" | TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
+                       'FB %' = round(sum(TaggedHitType == "FlyBall")/sum(PitchCall == "InPlay")*100, 1),
                        'LD %' = round(sum(TaggedHitType == "LineDrive")/sum(PitchCall == "InPlay")*100, 1),
+                       'PU %' = round(sum(TaggedHitType == "Popup")/sum(PitchCall == "InPlay")*100, 1),
                        'wOBA' = round(((.693*sum(PlayResult == "Walk") + .693*sum(PlayResult == "HitByPitch") + .884*sum(PlayResult == "Single") + 1.261*sum(PlayResult == "Double") + 1.601*sum(PlayResult == "Triple") + 2.072*sum(PlayResult == "HomeRun"))/(n()-sum(PlayResult == "IntentionalWalk"))),3)
       )
     table <- bind_rows(table, table2)
@@ -803,7 +800,7 @@ server <- function(input, output, session) {
     table$hiddenColumn[aux] <- 1
     tableFilter <- reactive({table})
     datatable(tableFilter(), options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0,ncol(table)))))) %>%
-      formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(3,8,12,15), `border-right` = "solid 1px") %>% 
+      formatStyle(c(1,2), `border-left` = "solid 1px") %>% formatStyle(c(3,8,10,15), `border-right` = "solid 1px") %>% 
       formatStyle(1:ncol(table), valueColumns = "hiddenColumn", `border-bottom` = styleEqual(1, "solid 3px")) %>%
       formatStyle('wOBA',
                   backgroundColor = styleInterval(c(.300, .340), c('lightgreen', 'white', 'lightcoral'))) %>%
