@@ -375,14 +375,15 @@ server <- function(input, output, session) {
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, TaggedPitchType %in% pitchinput, Counts %in% countinput) %>%
       group_by('Pitch' = TaggedPitchType) %>%
       dplyr::summarize('No.' = n(),
-                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n()*100,1),
+                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBallNotFieldable",
+                                                               "FoulBallFieldable", "InPlay"))/n()*100,1),
                        in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
                        "Zone %" = round(in_zones/n()*100, 1),
                        out_zones = n() - in_zones,
                        chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
                        "Chase %" = round((chases/out_zones)*100, 1),
                        'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
-                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay"))*100,1),
+                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay"))*100,1),
                        "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n()*100, 1),
                        'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n()*100,1)) %>%
       ungroup() %>%
@@ -394,14 +395,15 @@ server <- function(input, output, session) {
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), TaggedPitchType %in% pitchinput, Counts %in% countinput, BatterSide %in% splitinput) %>%
       dplyr::summarize('Pitch' = "Total",
                        #       'No.' = n(),
-                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay"))/n()*100,1),
+                       'Strike %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging",
+                                                               "FoulBallNotFieldable", "FoulBallFieldable", "InPlay"))/n()*100,1),
                        in_zones = sum(is_in_zone(PlateLocHeight, PlateLocSide)),
                        "Zone %" = round(in_zones/n()*100, 1),
                        out_zones = n() - in_zones,
                        chases = sum(is_o_swing(PlateLocHeight, PlateLocSide, PitchCall)),
                        "Chase %" = round(chases/out_zones*100, 1),
                        'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
-                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBall", "InPlay"))*100,1),
+                                           sum(PitchCall %in% c("StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay"))*100,1),
                        "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n()*100, 1),
                        'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n()*100,1)) %>%
       select(-c(in_zones, out_zones, chases)) %>%
@@ -485,7 +487,7 @@ server <- function(input, output, session) {
       splitinput = input$SplitInput
     }
     if(any(input$WhiffInput == "Any")){
-      whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay", "HitByPitch")
+      whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay", "HitByPitch")
     }
     else{
       whiffinput = "StrikeSwinging"
@@ -570,7 +572,7 @@ server <- function(input, output, session) {
       splitinput = input$SplitInput
     }
     if(any(input$WhiffInput == "Any")){
-      whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBall", "InPlay", "HitByPitch")
+      whiffinput = c("BallCalled", "BallIntentional", "StrikeCalled", "StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay", "HitByPitch")
     }
     else{
       whiffinput = "StrikeSwinging"
