@@ -13,15 +13,23 @@ library(plyr)
 library(gridExtra) 
 library(readr)
 library(lubridate)
+  
+BWGame <- read_csv("College Data/20241005-McKieFieldStad-Private-1_unverified.csv")
 
 fallGames <- c("College Data/20240918-McKieFieldStad-Private-2_unverified.csv",
                "College Data/20240919-McKieFieldStad-Private-1.csv",
                "College Data/20240920-McKieFieldStad-Private-1_unverified.csv",
                "College Data/20240925-McKieFieldStad-Private-4_unverified.csv",
-               "College Data/20240926-McKieFieldStad-Private-1_unverified.csv")
+               "College Data/20240926-McKieFieldStad-Private-1_unverified.csv",
+               "College Data/20241001-McKieFieldStad-Private-1_unverified.csv",
+               "College Data/20241003-McKieFieldStad-Private-1_unverified.csv")
 
 # Read and bind the fall games into fallDF
 fallDF <- bind_rows(lapply(fallGames, read_csv)) %>%
+  mutate(BatterId = as.character(BatterId),
+         CatcherId = as.character(CatcherId)) %>% 
+  bind_rows(BWGame) %>% 
+  filter(PitcherTeam == "MIA_RED") %>% 
   mutate(
     TaggedPitchType = case_when(
       Pitcher == "Berggren, Austin" & TaggedPitchType == "Splitter" ~ "ChangeUp",
