@@ -384,12 +384,13 @@ server <- function(input, output, session) {
                        "Chase %" = round((chases/out_zones)*100, 1),
                        'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
                                            sum(PitchCall %in% c("StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay"))*100,1),
+                       "Swings Induced" = sum(PitchCall %in% c("StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay")),
                        "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n()*100, 1),
                        'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n()*100,1)) %>%
       ungroup() %>%
       mutate('Usage %' = round(prop.table(No.)*100, 1)) %>%
       select(-c('No.', in_zones, out_zones, chases)) %>%
-      select(Pitch, 'Usage %', 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'SwStr %', 'CSW %')
+      select(Pitch, 'Usage %', 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'Swings Induced', 'SwStr %', 'CSW %')
     
     table2 <- table2 %>%
       filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), TaggedPitchType %in% pitchinput, Counts %in% countinput, BatterSide %in% splitinput) %>%
@@ -404,10 +405,11 @@ server <- function(input, output, session) {
                        "Chase %" = round(chases/out_zones*100, 1),
                        'Whiff %' = round(sum(PitchCall %in% c("StrikeSwinging"))/
                                            sum(PitchCall %in% c("StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay"))*100,1),
+                       "Swings Induced" = sum(PitchCall %in% c("StrikeSwinging", "FoulBallNotFieldable", "FoulBallFieldable", "InPlay")),
                        "SwStr %" = round(sum(PitchCall %in% c("StrikeSwinging"))/n()*100, 1),
                        'CSW %' = round(sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging"))/n()*100,1)) %>%
       select(-c(in_zones, out_zones, chases)) %>%
-      select(Pitch, 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'SwStr %', 'CSW %')
+      select(Pitch, 'Strike %', 'Zone %', 'Chase %', 'Whiff %', 'Swings Induced', 'SwStr %', 'CSW %')
     
     table <- bind_rows(table, table2)
     
