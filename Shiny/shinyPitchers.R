@@ -159,11 +159,10 @@ ui <- fluidPage(
                       br(),
           fluidRow(
             column(6, plotOutput("pitch_usage_plot")),  
-            column(6, plotOutput("date_velocity_plot"))
+            column(6, plotOutput("inning_usage_plot"))
           ), br(), br(), br(),
           fluidRow(
-            column(6, plotOutput("inning_usage_plot")),
-            br(),
+            column(6, plotOutput("date_velocity_plot")),
             column(6, plotOutput("inning_velocity_plot"))
           )
         )
@@ -1173,12 +1172,12 @@ server <- function(input, output, session) {
     ggplot(data = dataFilter(), aes(x = Inning, y = Usage, fill = TaggedPitchType)) +
       geom_bar(stat = "identity", position = position_dodge(), width = 0.5) +
       scale_fill_manual(values = pitch_colors) +
-      labs(x = "Inning", y = NULL, fill = "Pitch Type") +
+      labs(x = "Inning", y = NULL, title = "Usage % by Inning",fill = "Pitch Type") +
       scale_y_continuous(expand = expansion(mult = c(0, 0.1))) + 
       scale_x_continuous(limits = c(1, 9), breaks = 1:9) +
       theme_bw() +
       theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
-      theme(legend.position = "top", legend.text = element_text(size = 12), axis.title = element_text(size = 14), 
+      theme(legend.position = "left", legend.text = element_text(size = 12), axis.title = element_text(size = 14), 
             axis.text.x = element_text(size = 12),
             axis.text.y = element_text(size = 12))
     
@@ -1223,13 +1222,13 @@ server <- function(input, output, session) {
     ggplot(data = dataFilter) + 
       geom_line(aes(y = avgVelo, x = Inning, group = 1), color = "darkred", size = 2) +
       geom_point(aes(y = avgVelo, x = Inning), size = 3, color = "black") +  
-      labs(x = "Inning", y = "Average Pitch Velocity (MPH)", title = "Pitch Velocity by Inning") + 
+      labs(x = "Inning", y = "", title = "Pitch Velocity by Inning") + 
       ylim(65, 95) + 
       theme_bw() + 
       theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
       theme(legend.position = "none", axis.title = element_text(size = 14),
             axis.text.x = element_text(size = 12),
-            axis.text.y = element_text(size = 12))
+            axis.text.y = element_blank())
   }, width = 575, height = 400)
   
   
@@ -1277,7 +1276,7 @@ server <- function(input, output, session) {
       theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5), axis.text.x = element_text(size = 12),
             axis.text.y = element_text(size = 12)) +
       theme(legend.position = "none", axis.title = element_text(size = 14))
-  }, width = 575, height = 400)
+  }, width = 550, height = 400)
 
   
 
