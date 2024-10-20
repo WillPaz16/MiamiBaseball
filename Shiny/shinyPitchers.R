@@ -8,12 +8,14 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
   remotes::install_github("sportsdataverse/sportyR")
 }
 
+
 #################################
 
 # TO DO
 
 #* Pitch Result function isn't working, fix it maybe add more results (filter by whiffs doesnt actually filter by whiffs)
-#* Make the pitch velocity over time more representative of over time/game (right now viz is only showing by pitch count not inning)
+#*  pitch result seems to not do anything at all. maybe try isolating and fixing. I think its getting overwritten somewhere.
+#*
 #* Filters
 #*      Filter by batter team (select opposing team)
 #*      Filter by batter (batter on opponent team)
@@ -39,7 +41,7 @@ library(DT)
 library(sportyR)
 
 # csv read
-game <- read.csv("cleanedPitcherFall2024.csv")
+game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedPitcherGames.csv")
 
 game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)  # this can be deleted once fallDataRMD preprocessing is working properly
 
@@ -153,13 +155,23 @@ ui <- fluidPage(
                  )),
         #        plotOutput("hit_location_plot"), plotOutput("spray_chart")),
         tabPanel("Heat Maps", br(), plotOutput("heat_map")),
-        tabPanel("Trends Over Time", br(), plotOutput("pitch_usage_plot"), br(),
-                 plotOutput("pitch_velocity_plot"))
-      )
+        tabPanel("Trends Over Time",
+                      br(),
+          fluidRow(
+            column(6, plotOutput("pitch_usage_plot")),  
+            column(6, plotOutput("date_velocity_plot"))
+          ), br(), br(), br(),
+          fluidRow(
+            column(6, plotOutput("inning_usage_plot")),
+            br(),
+            column(6, plotOutput("inning_velocity_plot"))
+          )
+        )
+        
+        
     )
   )
-)
-
+))
 
 server <- function(input, output, session) {
   
@@ -970,7 +982,9 @@ server <- function(input, output, session) {
       theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
             axis.text = element_blank(),
             legend.position = "right",
-            legend.text = element_text(size = 12))
+            legend.text = element_text(size = 12),
+            axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12))
     
   }, width = 450, height = 450)
   
@@ -1086,7 +1100,7 @@ server <- function(input, output, session) {
     
     dataFilter <- reactive({
       table %>%
-        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, Counts %in% countinput) %>%
+        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]), BatterSide %in% splitinput, Counts %in% countinput, !is.na(TaggedPitchType)) %>%
         group_by(TaggedPitchType, Date) %>%
         dplyr::summarize('No.' = n()) %>%
         ungroup() %>%
@@ -1099,27 +1113,173 @@ server <- function(input, output, session) {
       scale_color_manual(values = pitch_colors) +
       labs(x = "Date", y = "Usage %", color = " ", title = "Usage % By Outing") +
       theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
-      theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_text(size = 14))
+      theme(legend.position = "none", legend.text = element_text(size = 12), axis.title = element_text(size = 14),
+            axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12))
     
     
-  }, width = 900, height = 450)
+  }, width = 550, height = 450)
   
-  output$pitch_velocity_plot <- renderPlot({
+  
+  output$inning_usage_plot <- renderPlot({
     table <- game
+    
+    if(any(input$CountInput == "All")){
+      countinput = c("0-0", "0-1", "0-2", "1-0", "1-1", "1-2", "2-0", "2-1", "2-2", "3-0", "3-1", "3-2")
+    }
+    else if(any(input$CountInput %in% c("Even", "Ahead", "Behind"))){
+      input4 <- input$CountInput[input$CountInput %in% c("Even")] 
+      input5 <- input$CountInput[input$CountInput %in% c("Ahead")]
+      input6 <- input$CountInput[input$CountInput %in% c("Behind")]
+      if(length(input4) == 1){
+        input4 <- c("0-0", "1-1", "2-2")
+      }
+      if(length(input5) == 1){
+        input5 <- c("0-1", "0-2", "1-2")
+      }
+      if(length(input6) == 1){
+        input6 <- c("1-0", "2-0", "3-0", "2-1", "3-1")
+      }
+      countinput <- input$CountInput[!input$CountInput %in% c("Even", "Ahead", "Behind")]
+      countinput <- c(countinput, input4, input5, input6)
+    }
+    else{
+      countinput = input$CountInput
+    }
+    if(input$SplitInput == "Both"){
+      splitinput = c("Right", "Left")
+    }
+    else{
+      splitinput = input$SplitInput
+    }
+    if(input$PitcherInput != "All") {
+      table <- table %>% filter(Pitcher %in% input$PitcherInput)
+    }
+    
     dataFilter <- reactive({
       table %>%
-        filter(Pitcher == input$PitcherInput, between(Date, input$DateRangeInput[1], input$DateRangeInput[2])) %>%
-        mutate(PitchNo = row_number())
+        filter(between(Date, input$DateRangeInput[1], input$DateRangeInput[2]),
+               BatterSide %in% splitinput,
+               Counts %in% countinput) %>%
+        filter(!is.na(TaggedPitchType), !is.na(Inning), !is.na(RelSpeed)) %>%  # Remove NAs from critical columns
+        group_by(TaggedPitchType, Inning) %>%
+        summarise(No. = n()) %>%
+        group_by(Inning) %>%
+        mutate(Usage = round(prop.table(No.) * 100, 1)) %>%
+        filter(!is.na(Usage))  # Remove any rows with NA Usage
     })
-    ggplot(data = dataFilter()) + 
-      geom_line(aes(y = RelSpeed, x = PitchNo, color = TaggedPitchType), size = 2) + 
-      scale_color_manual(values = pitch_colors) +
-      labs(x = "Pitch Count", y = "Pitch Velocity (MPH)", color = " ", title = "Pitch Velocity") + 
-      ylim(65, 95) + 
-      theme_bw() + theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5), axis.text = element_text(size = 12)) +
-      theme(legend.position = "bottom", legend.text = element_text(size = 12), axis.title = element_text(size = 14))
-  }, width = 900, height = 400)
+    
+    # Plotting
+    ggplot(data = dataFilter(), aes(x = Inning, y = Usage, fill = TaggedPitchType)) +
+      geom_bar(stat = "identity", position = position_dodge(), width = 0.5) +
+      scale_fill_manual(values = pitch_colors) +
+      labs(x = "Inning", y = NULL, fill = "Pitch Type") +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.1))) + 
+      scale_x_continuous(limits = c(1, 9), breaks = 1:9) +
+      theme_bw() +
+      theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
+      theme(legend.position = "top", legend.text = element_text(size = 12), axis.title = element_text(size = 14), 
+            axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12))
+    
+  }, width = 550, height = 450)
   
-}
+  output$inning_velocity_plot <- renderPlot({
+    table <- game %>%
+      filter(Pitcher %in% input$PitcherInput, 
+             between(Date, input$DateRangeInput[1], input$DateRangeInput[2]))
+    
+    # for pitch input
+    if ("All" %in% input$PitchInput) {
+      pitchinput <- c("Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
+    } else if (any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))) {
+      input1 <- input2 <- input3 <- character(0)  # Initialize variables
+      if ("Primaries" %in% input$PitchInput) {
+        input1 <- c("Fastball", "Sinker")
+      }
+      if ("Breaking Balls" %in% input$PitchInput) {
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if ("OffSpeed" %in% input$PitchInput) {
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- c(input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")], input1, input2, input3)
+    } else {
+      pitchinput <- input$PitchInput
+    }
+    
+    dataFilter <- table %>%
+      filter(TaggedPitchType %in% pitchinput) %>%
+      mutate(Inning = factor(Inning, levels = 1:max(table$Inning, na.rm = TRUE))) %>% 
+      group_by(Inning) %>%
+      summarize(avgVelo = mean(RelSpeed, na.rm = TRUE), .groups = 'drop')
+    
+    # if there is no data 
+    if (nrow(dataFilter) == 0) {
+      return(NULL)  
+    }
+    
+    # Create the plot
+    ggplot(data = dataFilter) + 
+      geom_line(aes(y = avgVelo, x = Inning, group = 1), color = "darkred", size = 2) +
+      geom_point(aes(y = avgVelo, x = Inning), size = 3, color = "black") +  
+      labs(x = "Inning", y = "Average Pitch Velocity (MPH)", title = "Pitch Velocity by Inning") + 
+      ylim(65, 95) + 
+      theme_bw() + 
+      theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5)) +
+      theme(legend.position = "none", axis.title = element_text(size = 14),
+            axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12))
+  }, width = 575, height = 400)
+  
+  
+  output$date_velocity_plot <- renderPlot({
+    table <- game %>%
+      filter(Pitcher %in% input$PitcherInput,
+             between(Date, input$DateRangeInput[1], input$DateRangeInput[2]))
 
+    # for pitch input
+    if ("All" %in% input$PitchInput) {
+      pitchinput <- c("Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
+    } else if (any(input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed"))) {
+      input1 <- input2 <- input3 <- character(0)  # Initialize variables
+      if ("Primaries" %in% input$PitchInput) {
+        input1 <- c("Fastball", "Sinker")
+      }
+      if ("Breaking Balls" %in% input$PitchInput) {
+        input2 <- c("Cutter", "Curveball", "Slider", "Sweeper")
+      }
+      if ("OffSpeed" %in% input$PitchInput) {
+        input3 <- c("ChangeUp", "Splitter")
+      }
+      pitchinput <- c(input$PitchInput[!input$PitchInput %in% c("Primaries", "Breaking Balls", "OffSpeed")], input1, input2, input3)
+    } else {
+      pitchinput <- input$PitchInput
+    }
+
+    dataFilter <- table %>%
+      filter(TaggedPitchType %in% pitchinput) %>%
+      group_by(Date) %>%
+      summarize(avgVelo = mean(RelSpeed, na.rm = TRUE), .groups = 'drop')
+
+    # if there is no data
+    if (nrow(dataFilter) == 0) {
+      return(NULL)
+    }
+
+    # Create the plot
+    ggplot(data = dataFilter) +
+      geom_line(aes(y = avgVelo, x = Date, group = 1), color = "dodgerblue", size = 2) +
+      geom_point(aes(y = avgVelo, x = Date), size = 3, color = "black") +
+      labs(x = "Date", y = "Average Pitch Velocity (MPH)", title = "Pitch Velocity by Date") +
+      ylim(65, 95) +
+      theme_bw() +
+      theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5), axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12)) +
+      theme(legend.position = "none", axis.title = element_text(size = 14))
+  }, width = 575, height = 400)
+
+  
+
+}
 shinyApp(ui = ui, server = server)
