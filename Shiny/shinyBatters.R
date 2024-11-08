@@ -29,8 +29,9 @@ library(rsconnect)
 ############################
 
 # csv read
-game <- read.csv("cleanedBatterFall2024.csv")
+game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedBatterFall2024.csv")
 game$Date <- as.Date(game$Date)
+game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)
 game$TaggedPitchType <- factor(game$TaggedPitchType, levels = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter"))
 pitch_colors <- c('Fastball' = '#d22d49', 'Sinker' = '#fe9d00', 'Cutter' = '#933f2c', 'Curveball' = '#00d1ed',
                   'Slider' = '#c3bd0d', 'Sweeper' = '#CB9AF0', 'ChangeUp' = '#23be41', 'Splitter' = '#3bacac', 'Other' = '#Acafaf')
