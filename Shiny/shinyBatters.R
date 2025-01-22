@@ -29,7 +29,7 @@ library(rsconnect)
 ############################
 
 # csv read
-game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedBatterFall2024.csv")
+game <- read.csv("~/Miami/Miami Baseball/ShinyApps/cleanedBatterGames.csv")
 game$Date <- as.Date(game$Date)
 game$HardHit <- ifelse(game$ExitSpeed >= 95, TRUE, FALSE)
 game$TaggedPitchType <- factor(game$TaggedPitchType, levels = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter"))
@@ -100,6 +100,10 @@ ui <- fluidPage(
   br(),
   sidebarLayout(
     sidebarPanel(
+      selectInput(inputId = "PitcherTeamInput", label = "Select Pitcher Team", 
+                  choices = c(All = "All", sort(unique(game$PitcherTeam)))),
+      selectInput(inputId = "BatterTeamInput", label = "Select Batter Team", 
+                  choices = c(All = "All", sort(unique(game$BatterTeam)))),
       selectInput(inputId = "BatterInput", label = "Select Batter", 
                   choices = c(All = "All", sort(unique(game$Batter)))),
       dateRangeInput(inputId = "DateRangeInput", 
@@ -141,7 +145,11 @@ server <- function(input, output, session) {
                updateSelectInput(session, inputId = "DateRangeInput", label = "Select Date Range", 
                                  choices = sort(unique(game$Date[game$Batter == input$BatterInput]))))
   
-  output$selected_pitcher <- renderText({paste(input$BatterInput)})
+  output$selected_pitcher_team <- renderText({paste(input$PitcherTeamInput)})
+  
+  output$selected_hitting_team <- renderText({paste(input$BatterTeamInput)})
+  
+  output$selected_batter <- renderText({paste(input$BatterInput)})
   
   output$selected_game <- renderText({paste(input$DateRangeInput)})
   
@@ -153,6 +161,14 @@ server <- function(input, output, session) {
   
   output$summary_table <- renderDataTable({
     table <- game
+    
+    if(input$PitcherTeamInput != "All") {
+      table <- table %>% filter(PitcherTeam %in% input$PitcherTeamInput)
+    }
+    
+    if(input$BatterTeamInput != "All") {
+      table <- table %>% filter(BatterTeam %in% input$BatterTeamInput)
+    }
     
     if(input$BatterInput != "All") {
       table <- table %>% filter(Batter %in% input$BatterInput)
@@ -182,6 +198,17 @@ server <- function(input, output, session) {
   output$advanced_batter_table <- renderDataTable({
     table <- game
     table2 <- game
+    
+    if(input$PitcherTeamInput != "All") {
+      table <- table %>% filter(PitcherTeam %in% input$PitcherTeamInput)
+      table2 <- table %>% filter(PitcherTeam %in% input$PitcherTeamInput)
+    }
+    
+    if(input$BatterTeamInput != "All") {
+      table <- table %>% filter(BatterTeam %in% input$BatterTeamInput)
+      table2 <- table %>% filter(BatterTeam %in% input$BatterTeamInput)
+    }
+    
     if(any(input$PitchInput == "All")){
       pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
@@ -308,6 +335,17 @@ server <- function(input, output, session) {
   output$batted_ball_table <- renderDataTable({
     table <- game
     table2 <- game
+    
+    if(input$PitcherTeamInput != "All") {
+      table <- table %>% filter(PitcherTeam %in% input$PitcherTeamInput)
+      table2 <- table %>% filter(PitcherTeam %in% input$PitcherTeamInput)
+    }
+    
+    if(input$BatterTeamInput != "All") {
+      table <- table %>% filter(BatterTeam %in% input$BatterTeamInput)
+      table2 <- table %>% filter(BatterTeam %in% input$BatterTeamInput)
+    }
+    
     if(any(input$PitchInput == "All")){
       pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
@@ -424,6 +462,15 @@ server <- function(input, output, session) {
   
   output$hit_location_plot <- renderPlot({
     table <- game
+    
+    if(input$PitcherTeamInput != "All") {
+      table <- table %>% filter(PitcherTeam %in% input$PitcherTeamInput)
+    }
+    
+    if(input$BatterTeamInput != "All") {
+      table <- table %>% filter(BatterTeam %in% input$BatterTeamInput)
+    }
+    
     if(any(input$PitchInput == "All")){
       pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
@@ -502,6 +549,15 @@ server <- function(input, output, session) {
   
   output$spray_chart <- renderPlot({
     table <- game
+    
+    if(input$PitcherTeamInput != "All") {
+      table <- table %>% filter(PitcherTeam %in% input$PitcherTeamInput)
+    }
+    
+    if(input$BatterTeamInput != "All") {
+      table <- table %>% filter(BatterTeam %in% input$BatterTeamInput)
+    }
+    
     if(any(input$PitchInput == "All")){
       pitchinput = c("Fastball", "Sinker","Cutter", "Curveball", "Slider", "Sweeper", "ChangeUp", "Splitter")
     }
