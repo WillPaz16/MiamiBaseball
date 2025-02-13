@@ -17,10 +17,11 @@ library(rsconnect)
  
 ######### TO DO ###########
 
-#* Filter
+#* Filters
 #*     Filter by AB
-#*     Filter by Pitching team
 #*     Filter by opposing pitcher
+#*     Issue: First table doesn't filter properly (works for batter and team but not per pitch, pitch type, side, etc..)
+#*     
 #* Add basic stat table (avg, slg, ops, etc.)
 #* 
 #* THE BIG ONE 
@@ -96,7 +97,7 @@ convert_to_time <- function(seconds) {
 
 ui <- fluidPage(
   
-  titlePanel("Miami University Batting Data"),
+  titlePanel("NCAA Batting Dashboard"),
   br(),
   sidebarLayout(
     sidebarPanel(
@@ -121,7 +122,7 @@ ui <- fluidPage(
                   choices = c("All", "Ahead", "Behind", "Even", 
                               sort(unique(game$Counts))), multiple = TRUE, selected = "All"),
       
-      img(src = "miami_logo.png", 
+      img(src = "NCAA_logo.png", 
           style = "display: block; margin-left: auto; margin-right: auto;", height = 150, width = 200)),
     mainPanel(
       tabsetPanel(

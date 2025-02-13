@@ -15,13 +15,6 @@ if (!requireNamespace("sportyR", quietly = TRUE)) {
 
 #* Pitch Result function isn't working, fix it maybe add more results (filter by whiffs doesnt actually filter by whiffs)
 #*  pitch result seems to not do anything at all. maybe try isolating and fixing. I think its getting overwritten somewhere.
-#*
-#* Filters
-#*      Filter by batter team (select opposing team)
-#*      Filter by batter (batter on opponent team)
-#*      
-#* We want to eventually create an NCAA dashboard which is essentially the same as this pitcher dashboard..
-#* but instead adds a filter for select team and select opponent across all Trackman data
 #*      
 #################################
 
@@ -112,7 +105,7 @@ convert_to_time <- function(seconds) {
 
 ui <- fluidPage(
   
-  titlePanel("Miami University Pitching Data"),
+  titlePanel("NCAA Pitching Dashboard"),
   br(),
   sidebarLayout(
     sidebarPanel(
@@ -139,7 +132,7 @@ ui <- fluidPage(
       selectInput(inputId = "WhiffInput", label = "Select Pitch Result", 
                   choices = c("Any", "Whiff"), multiple = TRUE, selected = "Any"),
       
-      img(src = "miami_logo.png", 
+      img(src = "NCAA_logo.png", 
           style = "display: block; margin-left: auto; margin-right: auto;", height = 150, width = 200)),
     mainPanel(
       tabsetPanel(
