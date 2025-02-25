@@ -19,7 +19,7 @@ library(kableExtra)
 
 ###############################################
 # Read in the data
-df <- read_csv("Miami/Miami Baseball/CatcherReportStuff/20250222-EastTennesseeState-1.csv") # Change file as needed
+df <- read_csv("Miami/Miami Baseball/CatcherReportStuff/20250215-RileyPark-1.csv") # Change file as needed
 glimpse(df)
 
 ###############################################
@@ -149,13 +149,13 @@ tableSummary <- function(df, catcher, date) {
     #group_by(TaggedPitchType) %>%
     #rename("Pitch Type" = "TaggedPitchType") %>%
     summarise(
-      `Pitches Caught` = sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "BallCalled")),
-      `CS Caught` = sum(PitchCall %in% c("StrikeCalled")),
+      `Pitches Caught` = sum(PitchCall %in% c("StrikeCalled", "StrikeSwinging", "BallCalled"), na.rm = TRUE),
+      `CS Caught` = sum(PitchCall %in% c("StrikeCalled"), na.rm = TRUE),
       `Balls Caught` = `Pitches Caught` - `CS Caught`,
-      `CS in Zone` = sum(PitchCall %in% c("StrikeCalled") & InStrikeZone == 1),
-      `CS Gained` = sum(PitchCall %in% c("StrikeCalled") & InStrikeZone == 0),
+      `CS in Zone` = sum(PitchCall %in% c("StrikeCalled") & InStrikeZone == 1, na.rm = TRUE),
+      `CS Gained` = sum(PitchCall %in% c("StrikeCalled") & InStrikeZone == 0, na.rm = TRUE),
       `% of CS Gained` = paste0(round((`CS Gained` / sum(PitchCall %in% c("StrikeCalled")))*100, 2),"%"),
-      `Balls Added` = sum(PitchCall %in% c("BallCalled") & InStrikeZone == 1),
+      `Balls Added` = sum(PitchCall %in% c("BallCalled") & InStrikeZone == 1, na.rm = TRUE),
       `% of Balls Added` = paste0(round((`Balls Added` / sum(PitchCall %in% c("BallCalled")))*100, 2), "%"),
       `Net Strikes Created` = `CS Gained` - `Balls Added`
     )
@@ -171,7 +171,7 @@ tableSummary <- function(df, catcher, date) {
   
   
   # Create the tableGrob object
-  table <- tableGrob(FinalPitches, rows = NULL)
+  table <- tableGrob(FinalPitches, rows = NULL) 
   
   # Add a title to the table
   title_text <- paste(full_name, formatted_date, "Catcher Report")
@@ -232,7 +232,7 @@ locationChart <- function(df) {
       PitchCall == "StrikeSwinging" ~ "Strike Swinging"
     ))
   
-  colors <- c("Strike Gained" = "red3", "Ball Added" = "green3", "True Called Strike" = "lavender",
+  colors <- c("Strike Gained" = "red3", "Ball Added" = "blue3", "True Called Strike" = "lavender",
               "True Ball" = "lavender", "Strike Swinging" = "lavender")
 
   locationMap <- ggplot(data = df, mapping = aes(x = PlateLocSide,
