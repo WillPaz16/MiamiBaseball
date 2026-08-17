@@ -16,6 +16,8 @@ python/
   analysis/                # Player-specific analysis (Ahmad comparison notebook, helpers)
   preprocessing/           # Percentile preprocessing for the pitcher-controllables model
 
+controllables-app/         # Deployed Dash app: pitcher controllables dashboard (xBABIP model)
+
 scripts/
   trackman-extract/        # Scripts to pull/concatenate/filter raw Trackman exports
   riley/                   # Riley's scripts (Stuff+, xBA, bullpen, pre-season reports)
@@ -54,7 +56,7 @@ Requires Python 3 with `pandas`, `numpy`, `matplotlib`, `scipy`, and `catboost` 
 
 ## Related repos
 
-- [miami-pitcher-controllables](https://github.com/WillPaz16/miami-pitcher-controllables) — deployed web app for pitcher controllables (xBABIP model), kept separate since it has its own deploy pipeline.
+- [miami-pitcher-controllables](https://github.com/WillPaz16/miami-pitcher-controllables) — the app now living at `controllables-app/` used to be its own repo here; it's still what Render currently deploys from and hasn't been decommissioned yet (see `controllables-app/README.md`).
 
 ## Data
 

@@ -1,0 +1,14 @@
+services:
+  # See https://render.com/docs/blueprint-spec for more info on render blueprints
+  - type: web
+    name: miami-pitcher-controllables
+    env: python
+    plan: free
+    rootDir: controllables-app
+    # A requirements.txt file must exist (relative to rootDir)
+    buildCommand: "pip install -r requirements.txt"
+    # app.py must exist (relative to rootDir) and contain `server=app.server`
+    startCommand: "gunicorn app:server"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
