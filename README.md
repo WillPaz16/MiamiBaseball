@@ -1,6 +1,41 @@
 # Miami Baseball Analytics
 
-Trackman-based pitching/hitting analytics for Miami University Baseball: data cleaning, scouting reports, a Shiny dashboard, and exploratory Python analysis.
+End-to-end Trackman analytics pipeline built for Miami University Baseball: raw pitch-tracking data goes in, and player scouting reports, an interactive dashboard, and a pitcher-evaluation model come out.
+
+Built and maintained as part of the analytics/R&D group supporting the coaching staff — cleaning game-by-game Trackman exports, generating per-player reports after every outing, and shipping a deployed web app that scores pitchers on process metrics independent of results.
+
+## What it produces
+
+<table>
+<tr>
+<td width="33%"><img src="sample-reports/Nick_Vardavas_Pitch_Profile_03_17_24.png" alt="Pitcher pitch profile report"></td>
+<td width="33%"><img src="sample-reports/Zach_MacDonald_Hitter_Report_03_17_24.png" alt="Hitter spray chart report"></td>
+<td width="33%"><img src="sample-reports/David_Novak_Catcher_Report_02_22_25.png" alt="Catcher framing report"></td>
+</tr>
+<tr>
+<td align="center">Pitcher pitch profile — velo, spin, break by pitch type</td>
+<td align="center">Hitter report — at-bat log, location, spray chart</td>
+<td align="center">Catcher framing report — strikes gained/lost by pitch</td>
+</tr>
+</table>
+
+Plus a live [Dash web app](controllables-app/) that ranks pitchers against 2024 reference percentiles using a trained xBABIP (CatBoost) model, and an interactive Shiny dashboard for filtering and exploring a season's pitch-level data.
+
+## Pipeline
+
+```
+raw Trackman CSVs
+      │
+      ▼
+scripts/trackman-extract/   →  pull, concatenate, filter raw exports
+      │
+      ▼
+r/preprocessing.Rmd         →  clean, tag barrels/hard-hit, compute tilt
+      │
+      ├──▶ r/reports/       →  per-player scouting reports (see above)
+      ├──▶ r/shiny/         →  interactive game-by-game dashboard
+      └──▶ python/          →  percentile modeling → controllables-app/
+```
 
 ## Structure
 
@@ -50,7 +85,7 @@ Requires Python 3 with `pandas`, `numpy`, `matplotlib`, `scipy`, and `catboost` 
 
 **Cleaning raw data:** point `r/preprocessing.Rmd` at a directory of raw Trackman game CSVs (see `scripts/trackman-extract/` for pulling/filtering exports) and knit it. It writes `cleanedPitcherGames.csv` / `cleanedBatterGames.csv`.
 
-**Generating a scouting report:** run the relevant script in `r/reports/` (e.g. `pitcherReports.R`) against a cleaned CSV; each writes report images like the ones in `sample-reports/`.
+**Generating a scouting report:** run the relevant script in `r/reports/` (e.g. `pitcherReports.R`) against a cleaned CSV; each writes report images like the ones above.
 
 **Running the Shiny dashboard locally:** open `r/shiny/shinyPitchers.R` or `shinyBatters.R` in RStudio and click Run App. Each script currently expects its cleaned CSV at a hardcoded path (`~/Miami/Miami Baseball/ShinyApps/cleaned{Pitcher,Batter}Games.csv`) — update that `read.csv()` call to point at your local cleaned data before running.
 
