@@ -4,6 +4,8 @@ End-to-end Trackman analytics pipeline built for Miami University Baseball: raw 
 
 Built and maintained as part of the analytics/R&D group supporting the coaching staff — cleaning game-by-game Trackman exports, generating per-player reports after every outing, and shipping a deployed web app that scores pitchers on process metrics independent of results.
 
+All analytics/report code (R, Python, Shiny, the Dash app) was written without AI assistance. AI (Claude) was used afterward for repository reorganization and documentation.
+
 ## What it produces
 
 <table>
