@@ -24,9 +24,37 @@ scripts/
 sample-reports/            # Example rendered report images
 ```
 
+## Setup
+
+### R
+
+Requires R with:
+
+```r
+install.packages(c("tidyverse", "readr", "lubridate", "DT", "patchwork",
+                    "gridExtra", "grid", "kableExtra", "pander", "knitr",
+                    "plyr", "shiny", "rsconnect"))
+
+# sportyR (strike zone plotting) is not on CRAN
+install.packages("remotes")
+remotes::install_github("sportsdataverse/sportyR")
+```
+
+### Python
+
+Requires Python 3 with `pandas`, `numpy`, `matplotlib`, `scipy`, and `catboost` (used by `python/preprocessing/preprocess_percentiles.py` and the Ahmad analysis notebook).
+
+## Usage
+
+**Cleaning raw data:** point `r/preprocessing.Rmd` at a directory of raw Trackman game CSVs (see `scripts/trackman-extract/` for pulling/filtering exports) and knit it. It writes `cleanedPitcherGames.csv` / `cleanedBatterGames.csv`.
+
+**Generating a scouting report:** run the relevant script in `r/reports/` (e.g. `pitcherReports.R`) against a cleaned CSV; each writes report images like the ones in `sample-reports/`.
+
+**Running the Shiny dashboard locally:** open `r/shiny/shinyPitchers.R` or `shinyBatters.R` in RStudio and click Run App. Each script currently expects its cleaned CSV at a hardcoded path (`~/Miami/Miami Baseball/ShinyApps/cleaned{Pitcher,Batter}Games.csv`) — update that `read.csv()` call to point at your local cleaned data before running.
+
 ## Related repos
 
-- [miami-pitcher-controllables-dashboard](https://github.com/WillPaz16/miami-pitcher-controllables-dashboard) — deployed web app for pitcher controllables (xBABIP model), kept separate since it has its own deploy pipeline.
+- [miami-pitcher-controllables](https://github.com/WillPaz16/miami-pitcher-controllables) — deployed web app for pitcher controllables (xBABIP model), kept separate since it has its own deploy pipeline.
 
 ## Data
 
