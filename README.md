@@ -44,8 +44,9 @@ r/preprocessing.Rmd         →  clean, tag barrels/hard-hit, compute tilt
 ```
 r/
   preprocessing.Rmd        # Cleans raw Trackman CSVs into cleanedPitcherGames.csv / cleanedBatterGames.csv
-  fallDataCleaning.R       # Fall-season data cleaning
-  games2025.R              # 2025 season game processing
+  season_cleaning.R        # Shared cleaning functions (barrels, tilt, PlayResult) used by both scripts below
+  fallDataCleaning.R       # Fall-season file list + one-off player/pitch-type corrections
+  games2025.R              # 2025 season file list + filtering
   reports/                 # Per-player report generators (pitcher, hitter, catcher, umpire, Scully)
   shiny/                   # Interactive Shiny dashboard (shinyPitchers.R, shinyBatters.R)
 
