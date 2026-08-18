@@ -181,10 +181,10 @@ tableSummary <- function(df, pitcher, date) {
 breakChart <- function(df) {
   # Define a color palette with enough colors
   pitch_types <- unique(df$TaggedPitchType)
-  colors <- c("Fastball" = "dodgerblue3"  , "Cutter" = "darkorange3", 
-              "Curveball" = "darkred", "Sinker" = "goldenrod3", 
-              "Slider" = "darkolivegreen3", "ChangeUp" = "darkorchid3",
-              "Splitter" = "darkorchid3")
+  colors <- c("Fastball" = "dodgerblue3", "Cutter" = "darkorange3",
+              "Curveball" = "darkred", "Sinker" = "goldenrod3",
+              "Slider" = "darkolivegreen3", "Sweeper" = "mediumpurple3",
+              "ChangeUp" = "darkorchid3", "Splitter" = "deeppink3")
   
   breakChart <- ggplot(df, aes(x = HorzBreak,
                                y = InducedVertBreak,
@@ -212,10 +212,10 @@ breakChart <- function(df) {
 locationChart <- function(df) {
   # Define a color palette with enough colors
   pitch_types <- unique(df$TaggedPitchType)
-  colors <- c("Fastball" = "dodgerblue3"  , "Cutter" = "darkorange3", 
-              "Curveball" = "darkred", "Sinker" = "goldenrod3", 
-              "Slider" = "darkolivegreen3", "ChangeUp" = "darkorchid3",
-              "Splitter" = "darkorchid3")
+  colors <- c("Fastball" = "dodgerblue3", "Cutter" = "darkorange3",
+              "Curveball" = "darkred", "Sinker" = "goldenrod3",
+              "Slider" = "darkolivegreen3", "Sweeper" = "mediumpurple3",
+              "ChangeUp" = "darkorchid3", "Splitter" = "deeppink3")
   
   df$PlateLocSide <- df$PlateLocSide * -1 #reversed to get pitcher pov
   locationMap <- ggplot(data = df, mapping = aes(x = PlateLocSide,

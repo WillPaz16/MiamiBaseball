@@ -332,9 +332,10 @@ title <- textGrob("Lazaro Marquez 2023 Report", gp = gpar(fontsize = 14, fontfac
 table <- grid.arrange(title, table, ncol = 1, heights = c(0.1, 1.0))
 
 #------------------Pitch Break Chart-------------------
-colors <- c("Fastball" = "dodgerblue3"  , "Cutter" = "darkorange3", 
-            "Curveball" = "darkred", "Sinker" = "goldenrod3", 
-            "Slider" = "darkolivegreen3", "ChangeUp" = "darkorchid3")
+colors <- c("Fastball" = "dodgerblue3", "Cutter" = "darkorange3",
+            "Curveball" = "darkred", "Sinker" = "goldenrod3",
+            "Slider" = "darkolivegreen3", "Sweeper" = "mediumpurple3",
+            "ChangeUp" = "darkorchid3", "Splitter" = "deeppink3")
 
 BreakChart <- ggplot(player_data, aes(x = horzbreak, y = inducedvertbreak, color = taggedpitchtype))+
   geom_point(size = 0.5, alpha = 0.7)+

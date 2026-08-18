@@ -46,7 +46,7 @@ pitch_colors <- c('Fastball' = '#d22d49', 'Sinker' = '#fe9d00', 'Cutter' = '#933
                   'Slider' = '#c3bd0d', 'Sweeper' = '#CB9AF0', 'ChangeUp' = '#23be41', 'Splitter' = '#3bacac', 'Other' = '#Acafaf')
 
 # some useful functions
-strike_zone <- c(-.9, .9, 1.55, 3.35)
+strike_zone <- c(-0.85, 0.85, 1.6, 3.5)
 is_in_zone <- function(height, side, zone = strike_zone) {
   zone <- 0
   for (i in seq_along(height)) {

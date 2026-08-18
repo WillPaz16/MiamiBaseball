@@ -101,9 +101,9 @@ apply_barrel_calculation <- function(data) {
 # Function to clean PlayResult
 clean_play_result <- function(data) {
   data$PlayResult <- case_when(
+    data$PitchCall == "BallIntentional" & data$KorBB == "Walk" ~ "IntentionalWalk",
     data$KorBB == "Walk" ~ "Walk",
     data$KorBB == "Strikeout" ~ "Strikeout",
-    data$PitchCall == "BallIntentional" & data$KorBB == "Walk" ~ "IntentionalWalk",
     data$PitchCall == "HitByPitch" ~ "HitByPitch",
     TRUE ~ data$PlayResult
   )
@@ -145,7 +145,11 @@ calculate_avg_tilt <- function(data) {
                            list(Pitcher = data$Pitcher, TaggedPitchType = data$TaggedPitchType), 
                            mean, na.rm = TRUE)
   
-  tiltSummary$AveTilt <- format(strptime(tiltSummary$secTilt, "%H:%M"), "%H:%M")
+  seconds <- tiltSummary$secTilt
+  hours <- as.integer(floor(seconds / 3600)) %% 24
+  minutes <- as.integer(floor(seconds %% 3600 / 60))
+  hours <- ifelse(hours == 0, 12, hours)
+  tiltSummary$AveTilt <- sprintf("%d:%02d", hours, minutes)
   return(tiltSummary)
 }
 

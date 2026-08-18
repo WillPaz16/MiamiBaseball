@@ -108,10 +108,10 @@ table <- grid.arrange(title, table, ncol = 1, heights = c(0.1, 1.0))
 
 
 #--------Pitch Break Chart-----------
-colors <- c("Fastball" = "dodgerblue3"  , "Cutter" = "darkorange3", 
-            "Curveball" = "darkred", "Sinker" = "goldenrod3", 
-            "Slider" = "darkolivegreen3", "ChangeUp" = "darkorchid3",
-            "Splitter" = "darkorchid3")
+colors <- c("Fastball" = "dodgerblue3", "Cutter" = "darkorange3",
+            "Curveball" = "darkred", "Sinker" = "goldenrod3",
+            "Slider" = "darkolivegreen3", "Sweeper" = "mediumpurple3",
+            "ChangeUp" = "darkorchid3", "Splitter" = "deeppink3")
 
 BreakChart <- ggplot(player_data, aes(x = HorzBreak, y = InducedVertBreak, color = TaggedPitchType))+
   geom_point(size = 1.5, alpha = 0.7)+

@@ -183,10 +183,10 @@ tableSummary(batterDF(df, "MacDonald, Zach"), "MacDonald, Zach", NA)
 
 locationChart <- function(df) {
   pitch_types <- unique(df$TaggedPitchType)
-  colors <- c("Fastball" = "dodgerblue3", "Cutter" = "darkorange3", 
-              "Curveball" = "darkred", "Sinker" = "goldenrod3", 
-              "Slider" = "darkolivegreen3", "ChangeUp" = "darkorchid3",
-              "Splitter" = "darkorchid3")
+  colors <- c("Fastball" = "dodgerblue3", "Cutter" = "darkorange3",
+              "Curveball" = "darkred", "Sinker" = "goldenrod3",
+              "Slider" = "darkolivegreen3", "Sweeper" = "mediumpurple3",
+              "ChangeUp" = "darkorchid3", "Splitter" = "deeppink3")
   
   df$PlateLocSide <- df$PlateLocSide * -1 #reversed to get pitcher pov
   # Create the base plot

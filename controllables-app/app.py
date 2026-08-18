@@ -32,6 +32,10 @@ xBABIP_Model.load_model("xBABIP_Model.cbm")
 # ------------------------
 # Metric functions (same as preprocessing)
 # ------------------------
+# NOTE: this box (0.708 = 8.5in ball-radius-adjusted half-width) is intentionally
+# different from the display strike zone used in r/reports and r/shiny — it must
+# stay identical between this file and preprocess_percentiles.py, since the
+# reference percentile CSVs were computed with this same definition.
 def define_strike_zone(df, top=3.5, bottom=1.5, left=-0.708, right=0.708):
     df['zone'] = (
         (df['platelocheight'] >= bottom) &
