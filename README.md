@@ -92,10 +92,6 @@ Requires Python 3 with `pandas`, `numpy`, `matplotlib`, `scipy`, and `catboost` 
 
 **Running the Shiny dashboard locally:** open `r/shiny/shinyPitchers.R` or `shinyBatters.R` in RStudio and click Run App. Each script currently expects its cleaned CSV at a hardcoded path (`~/Miami/Miami Baseball/ShinyApps/cleaned{Pitcher,Batter}Games.csv`) — update that `read.csv()` call to point at your local cleaned data before running.
 
-## Related repos
-
-- [miami-pitcher-controllables](https://github.com/WillPaz16/miami-pitcher-controllables) — the app now living at `controllables-app/` used to be its own repo here; it's still what Render currently deploys from and hasn't been decommissioned yet (see `controllables-app/README.md`).
-
 ## Data
 
 Raw and cleaned Trackman CSVs are not tracked in this repo (see `.gitignore`) — regenerate them locally by running `r/preprocessing.Rmd` or the scripts in `scripts/trackman-extract/` against raw exports.
